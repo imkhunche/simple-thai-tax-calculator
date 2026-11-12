@@ -14,14 +14,28 @@ main{max-width:720px;margin:0 auto;padding:16px 14px 110px}
 h1{font-size:1.4rem;margin:8px 0 4px}h2{font-size:1.05rem;margin:0 0 10px;color:var(--ac)}
 section{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin:14px 0}
 .mu{color:var(--mu);font-size:.88rem;margin:4px 0 8px}
-.r{display:grid;grid-template-columns:1fr minmax(120px,40%);gap:4px 10px;align-items:center;padding:6px 0;border-top:1px solid var(--bd)}
+.r{display:grid;grid-template-columns:1fr minmax(120px,40%);gap:6px 10px;align-items:center;padding:8px 0;border-top:1px solid var(--bd)}
 .r:first-of-type{border-top:0}.r[hidden]{display:none}
 .r label{font-size:.92rem}
+.r.full{grid-template-columns:1fr}
 input,select{width:100%;padding:8px;font:inherit;color:var(--tx);background:var(--in);border:1px solid var(--bd);border-radius:8px;text-align:right}
 select{text-align:left;background:var(--card)}
-.a{grid-column:1/-1;text-align:right;color:var(--ac);font-size:.8rem}
+.a{grid-column:1/-1;text-align:right;color:var(--ac);font-size:.82rem}
 .a:empty{display:none}
-table{width:100%;border-collapse:collapse}td{padding:6px 0;border-top:1px solid var(--bd)}td+td{text-align:right;font-variant-numeric:tabular-nums}
+.sub-list{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+.sub-item{border:1px solid var(--bd);border-radius:8px;padding:10px;background:rgba(128,128,128,0.03);display:flex;flex-direction:column;gap:8px}
+.sub-row{display:flex;gap:8px;align-items:center}
+.sub-row input{flex:1}
+button.btn{padding:6px 12px;font:inherit;font-size:.85rem;border-radius:6px;border:1px solid var(--bd);background:var(--card);color:var(--tx);cursor:pointer;white-space:nowrap}
+button.btn-add{color:var(--ac);border-color:var(--ac);align-self:flex-start;margin-top:4px}
+button.btn-add:hover{background:var(--ac2)}
+button.btn-del{color:#d9534f;border-color:var(--bd)}
+button.btn-del:hover{background:rgba(217,83,79,0.1)}
+.exp-box{display:flex;flex-direction:column;gap:6px}
+.exp-info{font-size:.85rem;color:var(--ac);text-align:right;padding:4px 0}
+table{width:100%;border-collapse:collapse}td,th{padding:6px 4px;border-top:1px solid var(--bd);font-size:.92rem}
+td+td,th+th{text-align:right;font-variant-numeric:tabular-nums}
+th{text-align:left;color:var(--mu);font-weight:600;font-size:.84rem;border-top:0}
 tr.k td{font-weight:600}
 #bar{position:fixed;left:0;right:0;bottom:0;background:var(--ac2);color:var(--tx);border-top:2px solid var(--ac);padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));display:flex;justify-content:space-between;gap:10px;align-items:center;z-index:5}
 #bar small{opacity:.9}
@@ -30,28 +44,86 @@ tr.k td{font-weight:600}
 <h1>เครื่องคำนวณภาษีเงินได้บุคคลธรรมดา</h1>
 <p class="mu">กรอกตัวเลขเป็นบาท (ช่องสีเหลือง) ระบบคำนวณทันที ข้อมูลประมวลผลในเบราว์เซอร์ของคุณเท่านั้น ไม่มีการบันทึกหรือส่งออก</p>
 <div id="app"></div>
-<section><h2>ผลการคำนวณ</h2><table id="res"></table></section>
+<section>
+  <h2>ผลการคำนวณ</h2>
+  <table id="res"></table>
+  <h3 style="font-size:.95rem;margin:16px 0 6px;color:var(--ac)">ตารางคำนวณภาษีตามขั้นบันได (มาตรา 48(1))</h3>
+  <table id="brackets"></table>
+</section>
 <section id="n94" hidden><h2>หมายเหตุ ภ.ง.ด. 94</h2><p class="mu">เงินได้ 40(5)-(8) ช่วง ม.ค.–มิ.ย. เกิน <span id="thr"></span> บาท จึงต้องยื่น ภ.ง.ด. 94 (ม.ค.–มิ.ย.)</p><p>โปรดตรวจสอบภาษีที่ชำระไว้ครึ่งปี (ภ.ง.ด.94) ผ่านระบบออนไลน์ของกรมสรรพากร หากภาษีรวมทั้งปีน้อยกว่าที่ภาษีที่ชำระไว้ครึ่งปี ท่านมีสิทธิขอคืนเงินภาษีในส่วนที่ชำระไว้เกินนั้นได้</p></section>
 <p class="mu">ผลลัพธ์เป็นการประมาณการเพื่อการวางแผน คำนวณตามสูตรที่กำหนดไว้ในต้นแบบ ไม่ใช่คำแนะนำทางภาษี โปรดตรวจสอบกับกรมสรรพากรก่อนยื่นจริง</p>
 </main>
 <div id="bar"><div><b id="bs">—</b><br><small id="fm"></small></div></div>
 <script>
+const R5_OPTS = [
+  ['0.30', 'บ้าน/โรงเรือน/สิ่งปลูกสร้าง (หักเหมา 30%)'],
+  ['0.20', 'ที่ดินเพื่อเกษตรกรรม (หักเหมา 20%)'],
+  ['0.15', 'ที่ดินที่ไม่ใช่การเกษตร (หักเหมา 15%)'],
+  ['0.30', 'ยานพาหนะ (หักเหมา 30%)'],
+  ['0.10', 'ทรัพย์สินอื่น (หักเหมา 10%)']
+];
+const R6_OPTS = [
+  ['0.60', 'การประกอบโรคศิลปะ (แพทย์) (หักเหมา 60%)'],
+  ['0.30', 'กฎหมาย/วิศวกรรม/สถาปัตยกรรม/บัญชี/ประณีตศิลปกรรม/อื่น ๆ (หักเหมา 30%)']
+];
+
+const dynInc = {
+  i5: [{ typeIdx: 0, amount: 0 }],
+  i6: [{ typeIdx: 0, amount: 0 }],
+  i7: [{ amount: 0 }],
+  i8: [{ amount: 0 }]
+};
+
+const BRACKETS = [
+  { label: '0 – 150,000', min: 0, max: 150000, rate: 0 },
+  { label: '150,001 – 300,000', min: 150000, max: 300000, rate: 0.05 },
+  { label: '300,001 – 500,000', min: 300000, max: 500000, rate: 0.10 },
+  { label: '500,001 – 750,000', min: 500000, max: 750000, rate: 0.15 },
+  { label: '750,001 – 1,000,000', min: 750000, max: 1000000, rate: 0.20 },
+  { label: '1,000,001 – 2,000,000', min: 1000000, max: 2000000, rate: 0.25 },
+  { label: '2,000,001 – 5,000,000', min: 2000000, max: 5000000, rate: 0.30 },
+  { label: 'เกิน 5,000,000 ขึ้นไป', min: 5000000, max: Infinity, rate: 0.35 }
+];
+
 //CALC_START
 function calc(s){
  const n=k=>Math.max(0,+s[k]||0),R=a=>a.reduce((x,y)=>x+y,0),mn=Math.min,mx=Math.max;
  const mar=s.st==='m',spNo=mar&&s.sp==='n';
- const i=[1,2,3,4,5,6,7,8].map(k=>n('i'+k)),inc=R(i),inc2=R(i.slice(1));
- const ex=mn((i[0]+i[1])*.5,1e5)+mn(i[2]*.5,1e5)+mn(n('e5'),i[4])+i[5]*.3+mn(n('e7'),i[6])+mn(n('e8'),i[7]);
- const kn=Math.floor(n('kn')),k2=Math.floor(n('k2')),dn=Math.floor(n('dn'));
- const pt=({f:1,m:1,b:2})[s.pa]||0;
- const pc=pt+(spNo?mn(2,Math.floor(n('sp6'))):0);
+ 
+ const sumDyn = k => R(dynInc[k].map(x => Math.max(0, +x.amount || 0)));
+ const i5 = sumDyn('i5'), i6 = sumDyn('i6'), i7 = sumDyn('i7'), i8 = sumDyn('i8');
+ const i=[n('i1'), n('i2'), n('i3'), n('i4'), i5, i6, i7, i8], inc=R(i), inc2=R(i.slice(1));
+
+ // ค่าใช้จ่าย
+ const ex12 = mn((i[0]+i[1])*0.5, 1e5);
+ const ex3 = s.e3_mode === 'actual' ? mn(n('e3_act'), i[2]) : mn(i[2]*0.5, 1e5);
+ 
+ const ex5_flat = R(dynInc.i5.map(item => (Math.max(0, +item.amount || 0)) * parseFloat(R5_OPTS[item.typeIdx][0])));
+ const ex5 = s.e5_mode === 'actual' ? mn(n('e5_act'), i5) : ex5_flat;
+
+ const ex6_flat = R(dynInc.i6.map(item => (Math.max(0, +item.amount || 0)) * parseFloat(R6_OPTS[item.typeIdx][0])));
+ const ex6 = s.e6_mode === 'actual' ? mn(n('e6_act'), i6) : ex6_flat;
+
+ const ex7 = s.e7_mode === 'actual' ? mn(n('e7_act'), i7) : i7 * 0.6;
+ const ex8 = s.e8_mode === 'actual' ? mn(n('e8_act'), i8) : i8 * 0.6;
+ const ex = ex12 + ex3 + ex5 + ex6 + ex7 + ex8;
+
+ // บุตร & บุตรบุญธรรม
+ const kn = Math.floor(n('kn')), k2 = Math.floor(n('k2')), dn = Math.floor(n('dn'));
+ const adn = mn(3, Math.floor(n('adn'))); // บุตรบุญธรรมสูงสุด 3 คน แยกเพดาน
+ const pt = ({f:1,m:1,b:2})[s.pa]||0;
+ const pc = pt+(spNo?mn(2,Math.floor(n('sp6'))):0);
+ 
  const d={};
- d.me=6e4;d.sp=spNo?6e4:0;
- d.ch=s.ch==='y'&&kn>0&&s.ci==='l'?3e4*kn+3e4*mn(k2,mx(kn-1,0)):0;
+ d.me=6e4;
+ d.sp=spNo?6e4:0;
+ d.ch = s.ch==='y' && kn>0 && s.ci==='l' ? (3e4*kn + 3e4*mn(k2, mx(kn-1,0))) : 0;
+ d.ad = s.ad==='y' && adn>0 && s.ai==='l' ? (3e4*adn) : 0;
  d.p57=mn(n('p57'),6e4);
  d.par=s.pi==='l'&&pc>0?3e4*mn(4,pc):0;
  d.dis=s.dis==='y'&&dn>0&&s.di==='l'?6e4*dn:0;
- d.p60=mn(n('p60'),15e3);d.p61=mn(n('p61'),25e3);
+ d.p60=mn(n('p60'),15e3);
+ d.p61=mn(n('p61'),25e3);
  d.p63=mx(0,mn(n('p63'),1e5-d.p61));
  d.p66=mx(0,mn(n('p66'),5e5,.15*i[0]));
  d.p67=mx(0,mn(n('p67'),5e5-d.p66));
@@ -60,56 +132,264 @@ function calc(s){
  const fund=d.p66+d.p67+d.p68+d.p69;
  d.p64=mx(0,mn(n('p64'),.15*inc,2e5,5e5-fund));
  d.p65=spNo?mn(n('p65'),1e4):0;
- d.p70=mn(n('p70'),19e4);d.p71=mn(n('p71'),19e4);d.p72=mn(n('p72'),3e5);
+ d.p70=mn(n('p70'),19e4);
+ d.p71=mn(n('p71'),19e4);
+ d.p72=mn(n('p72'),3e5);
  d.p73=mx(0,mn(n('p73'),.15*inc,5e5-fund-d.p64));
- d.p74=mn(n('p74'),1e5);d.p75=mn(n('p75'),.3*inc,5e4);d.pe=mn(n('pe'),.3*inc,3e5);d.p76=mn(n('p76'),9e3);
- const X=R(['me','sp','ch','p57','par','dis','p60','p61','p63','p64','p65','p66','p67','p68','p69','p70','p71','p72','p73','p74','p75','pe','p76'].map(k=>d[k]));
+ d.p74=mn(n('p74'),1e5);
+ d.p75=mn(n('p75'),.3*inc,5e4);
+ d.pe=mn(n('pe'),.3*inc,3e5);
+ d.solar=mn(n('solar'),2e5); // โซลาร์เซลล์ สูงสุด 200,000
+ d.p76=mn(n('p76'),9e3);
+ d.pol=mn(n('pol'),1e4); // บริจาคพรรคการเมือง สูงสุด 10,000 (ไม่รวมเพดาน 10%)
+
+ const X=R(['me','sp','ch','ad','p57','par','dis','p60','p61','p63','p64','p65','p66','p67','p68','p69','p70','p71','p72','p73','p74','p75','pe','solar','p76','pol'].map(k=>d[k]));
  const b=mx(0,inc-ex-X);
  d.p78=mn(2*n('p78'),.1*b);
  d.p79=mx(0,mn(2*n('p79'),.1*b-d.p78));
  d.p80=mx(0,mn(n('p80'),.1*(b-d.p78-d.p79)));
  const totDed=X+d.p78+d.p79+d.p80,net=mx(0,inc-ex-totDed);
- const t1=R([15e4,3e5,5e5,75e4,1e6,2e6,5e6].map(t=>mx(0,net-t)*.05));
- const t2=inc2>=12e4?inc2*.005:0,tax=t2>5e3?mx(t1,t2):t1;
+ 
+ // ขั้นบันไดภาษี
+ const bracketRows = BRACKETS.map(br => {
+   const taxable = mx(0, mn(net, br.max) - br.min);
+   const taxAmt = taxable * br.rate;
+   return { ...br, taxable, taxAmt };
+ });
+ const t1 = R(bracketRows.map(x => x.taxAmt));
+ const t2 = inc2>=12e4 ? inc2*.005 : 0;
+ const tax = t2>5e3 ? mx(t1,t2) : t1;
+ 
  const wht=n('w1')+n('w2')+n('w3');
  const half=n('h')>0?n('h'):R(i.slice(4));
  const form=inc===0?'':inc2===0?'ภ.ง.ด. 91':'ภ.ง.ด. 90'+(half>(mar?12e4:6e4)?' และ ภ.ง.ด. 94 (ม.ค.–มิ.ย.)':'');
- return{inc,ex,totDed,net,t1,t2,tax,wht,due:mx(0,tax-wht),refund:mx(0,wht-tax),form,p94:half>(mar?12e4:6e4),thr:mar?12e4:6e4,d,caps:{p78:.1*b,p79:mx(0,.1*b-d.p78),p80:.1*(b-d.p78-d.p79)}};
+ return{
+   inc, ex, exDetails:{ex12, ex3, ex5, ex5_flat, ex6, ex6_flat, ex7, ex8},
+   totDed, net, t1, t2, tax, wht, due:mx(0,tax-wht), refund:mx(0,wht-tax),
+   form, p94:half>(mar?12e4:6e4), thr:mar?12e4:6e4, d, bracketRows,
+   caps:{p78:.1*b, p79:mx(0,.1*b-d.p78), p80:.1*(b-d.p78-d.p79)}
+ };
 }
 //CALC_END
+
 const LT=[['l','ไม่เกิน 30,000 บาท/ปี'],['g','เกิน 30,000 บาท/ปี']];
 const P=[
-['st','สถานะ','s',[['s','โสด/หม้าย'],['m','สมรส']]],
-['sp','คู่สมรส','s',[['i','มีรายได้'],['n','ไม่มีรายได้']],s=>s.st==='m'],
-['sp6','จำนวนบิดามารดาของคู่สมรส (0-2 คน)','n',0,s=>s.st==='m'&&s.sp==='n'],
-['ch','บุตร','s',[['n','ไม่มีบุตร'],['y','มีบุตร']]],
-['kn','จำนวนบุตร (คน)','n',0,s=>s.ch==='y'],
-['k2','บุตรคนที่ 2 ขึ้นไปที่เกิดตั้งแต่ปี 2561 (คน)','n',0,s=>s.ch==='y'],
-['ci','รายได้ของบุตร','s',LT,s=>s.ch==='y'],
-['pa','บิดามารดาของตนเอง (อายุ 60 ปีขึ้นไป)','s',[['n','ไม่มี'],['f','มีบิดา'],['m','มีมารดา'],['b','มีทั้งสองท่าน']]],
-['pi','รายได้ของบิดามารดา','s',LT,s=>s.pa!=='n'||(s.st==='m'&&s.sp==='n'&&+s.sp6>0)],
-['dis','ผู้พิการ/ทุพพลภาพที่อุปการะ','s',[['n','ไม่มี'],['y','มี']]],
-['dn','จำนวนผู้พิการ (คน)','n',0,s=>s.dis==='y'],
-['di','รายได้ของผู้พิการ','s',LT,s=>s.dis==='y'],
-['h','เงินได้ 40(5)-(8) ช่วง ม.ค.–มิ.ย. (ใช้ตรวจเกณฑ์ ภ.ง.ด.94 เว้นว่าง = ใช้เงินได้ทั้งปี)','n',0]];
-const INC=[['i1','40(1) เงินเดือน ค่าจ้าง โบนัส บำนาญ'],['i2','40(2) ค่านายหน้า ค่าธรรมเนียม เบี้ยประชุม'],['i3','40(3) กู๊ดวิลล์ ลิขสิทธิ์ เงินรายปี'],['i4','40(4) ดอกเบี้ย เงินปันผล ส่วนแบ่งกำไร'],['i5','40(5) ค่าเช่าทรัพย์สิน'],['i6','40(6) วิชาชีพอิสระ'],['i7','40(7) รับเหมา'],['i8','40(8) ธุรกิจ พาณิชย์ เกษตร อื่น ๆ']].map(a=>[...a,'n',0]);
-const EXP=[['e5','ค่าใช้จ่าย 40(5) (ตามจริงหรืออัตราเหมา)'],['e7','ค่าใช้จ่าย 40(7) (ตามจริงหรือเหมา 60%)'],['e8','ค่าใช้จ่าย 40(8) (ตามจริงหรืออัตราเหมา)']].map(a=>[...a,'n',0]);
-const DED=[['p57','ค่าฝากครรภ์และคลอดบุตร (ไม่เกิน 60,000)'],['p60','เบี้ยประกันสุขภาพบิดามารดา (ไม่เกิน 15,000)'],['p61','เบี้ยประกันสุขภาพตนเอง (ไม่เกิน 25,000)'],['p63','เบี้ยประกันชีวิตตนเอง (รวมสุขภาพไม่เกิน 100,000)'],['p64','เบี้ยประกันชีวิตแบบบำนาญ'],['p65','เบี้ยประกันชีวิตคู่สมรสไม่มีรายได้ (ไม่เกิน 10,000)'],['p66','กองทุนสำรองเลี้ยงชีพ'],['p67','กองทุนการออมแห่งชาติ (กอช.)'],['p68','กบข.'],['p69','กองทุนสงเคราะห์ครูโรงเรียนเอกชน'],['p70','เงินได้ผู้พิการ (ยกเว้นไม่เกิน 190,000)'],['p71','เงินได้ผู้อายุ 65 ปีขึ้นไป (ยกเว้นไม่เกิน 190,000)'],['p72','ค่าชดเชยตามกฎหมายแรงงาน (ไม่เกิน 300,000)'],['p73','กองทุน RMF'],['p74','ดอกเบี้ยเงินกู้ที่อยู่อาศัย (ไม่เกิน 100,000)'],['p75','โอนหน่วยลงทุน LTF ไป Thai ESGX (13 พ.ค.–30 มิ.ย. 2568 ถือครองไม่ต่ำกว่า 5 ปี ไม่เกิน 50,000 และ 30% ของเงินได้)'],['pe','กองทุน Thai ESG ซื้อช่วง 1 ม.ค. 2567–31 ธ.ค. 2569 ถือต่อเนื่องไม่น้อยกว่า 5 ปี (ไม่เกิน 30% ของเงินได้ และ 300,000)'],['p76','เงินสมทบประกันสังคม (ไม่เกิน 9,000)'],['p78','บริจาคเพื่อการศึกษา (หักได้ 2 เท่า)'],['p79','ค่าใช้จ่ายและบริจาคที่หักได้ 2 เท่า'],['p80','บริจาคทั่วไป']].map(a=>[...a,'n',0]);
-const WH=[['w1','ภาษีหัก ณ ที่จ่ายจากเงินได้ 40(1) (50 ทวิ)'],['w2','ภาษีหัก ณ ที่จ่ายจากเงินได้ 40(2)-(8)'],['w3','ภาษีที่ชำระไว้แล้วตาม ภ.ง.ด.94 (ครึ่งปี)']].map(a=>[...a,'n',0]);
-const ALL=[...P,...INC,...EXP,...DED,...WH],$=id=>document.getElementById(id);
+  ['st','สถานะ','s',[['s','โสด/หม้าย'],['m','สมรส']]],
+  ['sp','คู่สมรส','s',[['i','มีรายได้'],['n','ไม่มีรายได้']],s=>s.st==='m'],
+  ['sp6','จำนวนบิดามารดาของคู่สมรส (0-2 คน)','n',0,s=>s.st==='m'&&s.sp==='n'],
+  ['ch','บุตรโดยชอบด้วยกฎหมาย (อายุไม่เกิน 20 ปี หรือ 20–25 ปี และศึกษาอยู่ในระดับอุดมศึกษา)','s',[['n','ไม่มีบุตร'],['y','มีบุตร']]],
+  ['kn','จำนวนบุตร (คน)','n',0,s=>s.ch==='y'],
+  ['k2','บุตรคนที่ 2 ขึ้นไปที่เกิดตั้งแต่ปี 2561 (คน)','n',0,s=>s.ch==='y'],
+  ['ci','รายได้ของบุตร','s',LT,s=>s.ch==='y'],
+  ['ad','บุตรบุญธรรม (อายุไม่เกิน 20 ปี หรือ 20–25 ปี และศึกษาอยู่ในระดับอุดมศึกษา ลดหย่อน 30,000 บาท/คน สูงสุด 3 คน แยกเพดานจากบุตรตามกฎหมาย)','s',[['n','ไม่มีบุตรบุญธรรม'],['y','มีบุตรบุญธรรม']]],
+  ['adn','จำนวนบุตรบุญธรรม (คน - สูงสุด 3 คน)','n',0,s=>s.ad==='y'],
+  ['ai','รายได้ของบุตรบุญธรรม','s',LT,s=>s.ad==='y'],
+  ['pa','บิดามารดาของตนเอง (อายุ 60 ปีขึ้นไป)','s',[['n','ไม่มี'],['f','มีบิดา'],['m','มีมารดา'],['b','มีทั้งสองท่าน']]],
+  ['pi','รายได้ของบิดามารดา','s',LT,s=>s.pa!=='n'||(s.st==='m'&&s.sp==='n'&&+s.sp6>0)],
+  ['dis','ผู้พิการ/ทุพพลภาพที่อุปการะ','s',[['n','ไม่มี'],['y','มี']]],
+  ['dn','จำนวนผู้พิการ (คน)','n',0,s=>s.dis==='y'],
+  ['di','รายได้ของผู้พิการ','s',LT,s=>s.dis==='y'],
+  ['h','เงินได้ 40(5)-(8) ช่วง ม.ค.–มิ.ย. (ใช้ตรวจเกณฑ์ ภ.ง.ด.94 เว้นว่าง = ใช้เงินได้ทั้งปี)','n',0]
+];
+
+const INC_STATIC=[
+  ['i1','40(1) เงินเดือน ค่าจ้าง โบนัส บำนาญ','n',0],
+  ['i2','40(2) ค่านายหน้า ค่าธรรมเนียม เบี้ยประชุม','n',0],
+  ['i3','40(3) กู๊ดวิลล์ ลิขสิทธิ์ เงินรายปี','n',0],
+  ['i4','40(4) ดอกเบี้ย เงินปันผล ส่วนแบ่งกำไร','n',0]
+];
+
+const DED=[
+  ['p57','ค่าฝากครรภ์และคลอดบุตร (ไม่เกิน 60,000)'],
+  ['p60','เบี้ยประกันสุขภาพบิดามารดา (ไม่เกิน 15,000)'],
+  ['p61','เบี้ยประกันสุขภาพตนเอง (ไม่เกิน 25,000)'],
+  ['p63','เบี้ยประกันชีวิตตนเอง (รวมสุขภาพไม่เกิน 100,000)'],
+  ['p64','เบี้ยประกันชีวิตแบบบำนาญ (รวม กบข./PVD/RMF/กอช. ไม่เกิน 500,000)'],
+  ['p65','เบี้ยประกันชีวิตคู่สมรสไม่มีรายได้ (ไม่เกิน 10,000)'],
+  ['p66','กองทุนสำรองเลี้ยงชีพ (PVD) (รวมกลุ่มเกษียณไม่เกิน 500,000)'],
+  ['p67','กองทุนการออมแห่งชาติ (กอช.) (รวมกลุ่มเกษียณไม่เกิน 500,000)'],
+  ['p68','กบข. (รวมกลุ่มเกษียณไม่เกิน 500,000)'],
+  ['p69','กองทุนสงเคราะห์ครูโรงเรียนเอกชน (รวมกลุ่มเกษียณไม่เกิน 500,000)'],
+  ['p70','เงินได้ผู้พิการ (ยกเว้นไม่เกิน 190,000)'],
+  ['p71','เงินได้ผู้อายุ 65 ปีขึ้นไป (ยกเว้นไม่เกิน 190,000)'],
+  ['p72','ค่าชดเชยตามกฎหมายแรงงาน (ไม่เกิน 300,000)'],
+  ['p73','กองทุน RMF (ต้องลงทุนต่อเนื่องทุกปี หรือปีเว้นปี รวมกลุ่มเกษียณไม่เกิน 500,000)'],
+  ['p74','ดอกเบี้ยเงินกู้ที่อยู่อาศัย (ไม่เกิน 100,000)'],
+  ['p75','โอนหน่วยลงทุน LTF ไป Thai ESGX (13 พ.ค.–30 มิ.ย. 2568 ถือครองไม่ต่ำกว่า 5 ปี ไม่เกิน 50,000 และ 30% ของเงินได้)'],
+  ['pe','กองทุน Thai ESG ซื้อช่วง 1 ม.ค. 2567–31 ธ.ค. 2569 ถือต่อเนื่องไม่น้อยกว่า 5 ปี (ไม่เกิน 30% ของเงินได้ และ 300,000)'],
+  ['solar','ค่าติดตั้งโซลาร์เซลล์ที่อยู่อาศัย (จ่ายจริงสูงสุดไม่เกิน 200,000 บาท ช่วง 3 มี.ค. 2569 – 31 ธ.ค. 2571 ระบบ On-Grid/Hybrid เชื่อมการไฟฟ้า ≤10 kWp ที่อยู่ผู้ยื่นภาษี 1 ครั้ง/ระบบ ไม่ซ้อนสิทธิ์อื่น)'],
+  ['p76','เงินสมทบประกันสังคม (ไม่เกิน 9,000)'],
+  ['pol','เงินบริจาคพรรคการเมือง (สูงสุดไม่เกิน 10,000 บาท/ปี ไม่รวมเพดาน 10%)'],
+  ['p78','บริจาคเพื่อการศึกษา (หักได้ 2 เท่า)'],
+  ['p79','ค่าใช้จ่ายและบริจาคที่หักได้ 2 เท่า'],
+  ['p80','บริจาคทั่วไป']
+].map(a=>[...a,'n',0]);
+
+const WH=[
+  ['w1','ภาษีหัก ณ ที่จ่ายจากเงินได้ 40(1) (50 ทวิ)'],
+  ['w2','ภาษีหัก ณ ที่จ่ายจากเงินได้ 40(2)-(8)'],
+  ['w3','ภาษีที่ชำระไว้แล้วตาม ภ.ง.ด.94 (ครึ่งปี)']
+].map(a=>[...a,'n',0]);
+
+const ALL_STATIC=[...P,...INC_STATIC,...DED,...WH], $=id=>document.getElementById(id);
+
 const row=([k,l,t,o])=>`<div class="r" id="r_${k}"><label for="${k}">${l}</label>${t==='s'?`<select id="${k}">${o.map(([v,x])=>`<option value="${v}">${x}</option>`).join('')}</select>`:`<input id="${k}" type="number" inputmode="decimal" min="0" step="any" placeholder="0">`}<small class="a" id="a_${k}"></small></div>`;
-const sec=(h,rs,note)=>`<section><h2>${h}</h2>${note?`<p class="mu">${note}</p>`:''}${rs.map(row).join('')}</section>`;
-$('app').innerHTML=sec('1 ข้อมูลส่วนตัว',P,'ค่าลดหย่อนส่วนตัว 60,000 บาท และค่าลดหย่อนคู่สมรส บุตร บิดามารดา ผู้พิการ คำนวณให้อัตโนมัติ')+sec('2 เงินได้ทั้งปี (บาท)',INC)+sec('3 ค่าใช้จ่าย',EXP,'40(1)-(2) หักเหมา 50% รวมไม่เกิน 100,000 · 40(3) หัก 50% ไม่เกิน 100,000 · 40(6) หัก 30% · 40(4) ไม่มีค่าใช้จ่าย คำนวณให้อัตโนมัติ กรอกเฉพาะ 40(5) 40(7) 40(8) (ไม่เกินเงินได้ประเภทนั้น)')+sec('4 ค่าลดหย่อนและยกเว้น (กรอกจำนวนที่จ่ายจริง)',DED.slice(0,-3))+sec('5 เงินบริจาค',DED.slice(-3),'บริจาคเพื่อการศึกษา และค่าใช้จ่าย/บริจาค 2 เท่า รวมกันไม่เกิน 10% ของเงินได้หลังหักค่าใช้จ่ายและค่าลดหย่อนอื่น · บริจาคทั่วไปไม่เกิน 10% ของเงินได้ส่วนที่เหลือหลังหักบริจาค 2 เท่า · เพดานของแต่ละรายการแสดงใต้ช่อง')+sec('6 ภาษีที่ชำระไว้แล้ว',WH,'โปรดตรวจสอบภาษีที่ชำระไว้ครึ่งปี (ภ.ง.ด.94) ผ่านระบบออนไลน์ของกรมสรรพากร หากภาษีรวมทั้งปีน้อยกว่าที่ภาษีที่ชำระไว้ครึ่งปี ท่านมีสิทธิขอคืนเงินภาษีในส่วนที่ชำระไว้เกินนั้นได้');
+
+function buildDynSection() {
+  const configs = [
+    { key: 'i5', label: '40(5) ค่าเช่าทรัพย์สิน', opts: R5_OPTS },
+    { key: 'i6', label: '40(6) วิชาชีพอิสระ', opts: R6_OPTS },
+    { key: 'i7', label: '40(7) รับเหมา', opts: null },
+    { key: 'i8', label: '40(8) ธุรกิจ พาณิชย์ เกษตร อื่น ๆ', opts: null }
+  ];
+  return configs.map(c => `
+    <div class="r full" id="wrap_${c.key}">
+      <label>${c.label}</label>
+      <div class="sub-list" id="list_${c.key}"></div>
+      <button type="button" class="btn btn-add" onclick="addDynItem('${c.key}')">+ เพิ่มรายการ</button>
+    </div>
+  `).join('');
+}
+
+function buildExpSection() {
+  const items = [
+    { key: 'e3', label: 'ค่าใช้จ่าย 40(3) กู๊ดวิลล์ ลิขสิทธิ์ เงินรายปี', flatDesc: 'อัตราเหมา 50% (ไม่เกิน 100,000 บาท)' },
+    { key: 'e5', label: 'ค่าใช้จ่าย 40(5) ค่าเช่าทรัพย์สิน', flatDesc: 'อัตราเหมาตามประเภททรัพย์สิน (10%–30%)' },
+    { key: 'e6', label: 'ค่าใช้จ่าย 40(6) วิชาชีพอิสระ', flatDesc: 'อัตราเหมาตามประเภทวิชาชีพ (30% หรือ 60%)' },
+    { key: 'e7', label: 'ค่าใช้จ่าย 40(7) รับเหมา', flatDesc: 'อัตราเหมา 60%' },
+    { key: 'e8', label: 'ค่าใช้จ่าย 40(8) ธุรกิจ พาณิชย์ เกษตร อื่น ๆ', flatDesc: 'อัตราเหมา 60%' }
+  ];
+  return items.map(it => `
+    <div class="r">
+      <label for="${it.key}_mode">${it.label}</label>
+      <div class="exp-box">
+        <select id="${it.key}_mode">
+          <option value="flat">หักอัตราเหมา (${it.flatDesc})</option>
+          <option value="actual">หักตามจริง (กรอกตัวเลขเอง)</option>
+        </select>
+        <input id="${it.key}_act" type="number" inputmode="decimal" min="0" step="any" placeholder="กรอกค่าใช้จ่ายตามจริง (บาท)" hidden>
+      </div>
+      <small class="a" id="a_${it.key}"></small>
+    </div>
+  `).join('');
+}
+
+$('app').innerHTML =
+  `<section><h2>1 ข้อมูลส่วนตัว</h2><p class="mu">ค่าลดหย่อนส่วนตัว 60,000 บาท และค่าลดหย่อนคู่สมรส บุตร บุตรบุญธรรม บิดามารดา ผู้พิการ คำนวณให้อัตโนมัติ</p>${P.map(row).join('')}</section>` +
+  `<section><h2>2 เงินได้ทั้งปี (บาท)</h2>${INC_STATIC.map(row).join('')}${buildDynSection()}</section>` +
+  `<section><h2>3 ค่าใช้จ่าย</h2><p class="mu">40(1)-(2) หักเหมา 50% รวมไม่เกิน 100,000 · 40(4) ไม่มีค่าใช้จ่าย · หมวด 40(3), 40(5)–40(8) เลือกหักอัตราเหมาหรือหักตามจริงได้ด้านล่าง</p>${buildExpSection()}</section>` +
+  `<section><h2>4 ค่าลดหย่อนและยกเว้น (กรอกจำนวนที่จ่ายจริง)</h2>${DED.slice(0,-3).map(row).join('')}</section>` +
+  `<section><h2>5 เงินบริจาค</h2><p class="mu">บริจาคเพื่อการศึกษา และค่าใช้จ่าย/บริจาค 2 เท่า รวมกันไม่เกิน 10% ของเงินได้หลังหักค่าใช้จ่ายและค่าลดหย่อนอื่น · บริจาคทั่วไปไม่เกิน 10% ของเงินได้ส่วนที่เหลือหลังหักบริจาค 2 เท่า (ไม่รวมบริจาคพรรคการเมือง)</p>${DED.slice(-3).map(row).join('')}</section>` +
+  `<section><h2>6 ภาษีที่ชำระไว้แล้ว</h2><p class="mu">โปรดตรวจสอบภาษีที่ชำระไว้ครึ่งปี (ภ.ง.ด.94) ผ่านระบบออนไลน์ของกรมสรรพากร หากภาษีรวมทั้งปีน้อยกว่าที่ภาษีที่ชำระไว้ครึ่งปี ท่านมีสิทธิขอคืนเงินภาษีในส่วนที่ชำระไว้เกินนั้นได้</p>${WH.map(row).join('')}</section>`;
+
+function renderDynList(key) {
+  const container = $('list_' + key);
+  const items = dynInc[key];
+  const opts = key === 'i5' ? R5_OPTS : key === 'i6' ? R6_OPTS : null;
+  container.innerHTML = items.map((item, idx) => `
+    <div class="sub-item">
+      ${opts ? `
+        <select onchange="updateDynType('${key}', ${idx}, this.value)">
+          ${opts.map((o, oIdx) => `<option value="${oIdx}" ${item.typeIdx == oIdx ? 'selected' : ''}>${o[1]}</option>`).join('')}
+        </select>
+      ` : ''}
+      <div class="sub-row">
+        <input type="number" inputmode="decimal" min="0" step="any" placeholder="0" value="${item.amount || ''}" oninput="updateDynAmt('${key}', ${idx}, this.value)">
+        ${items.length > 1 ? `<button type="button" class="btn btn-del" onclick="delDynItem('${key}', ${idx})">ลบรายการ</button>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+window.addDynItem = function(key) {
+  dynInc[key].push(key === 'i5' || key === 'i6' ? { typeIdx: 0, amount: 0 } : { amount: 0 });
+  renderDynList(key);
+  up();
+};
+window.delDynItem = function(key, idx) {
+  if (dynInc[key].length > 1) {
+    dynInc[key].splice(idx, 1);
+    renderDynList(key);
+    up();
+  }
+};
+window.updateDynType = function(key, idx, val) {
+  dynInc[key][idx].typeIdx = +val;
+  up();
+};
+window.updateDynAmt = function(key, idx, val) {
+  dynInc[key][idx].amount = val;
+  up();
+};
+
+['i5','i6','i7','i8'].forEach(renderDynList);
+
 const f2=x=>x.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 function up(){
- const s={};ALL.forEach(f=>s[f[0]]=$(f[0]).value);
- ALL.forEach(f=>{if(f[4])$('r_'+f[0]).hidden=!f[4](s)});
+ const s={};
+ ALL_STATIC.forEach(f=>s[f[0]]=$(f[0]).value);
+ ['e3','e5','e6','e7','e8'].forEach(k=>{
+   s[k+'_mode'] = $(k+'_mode').value;
+   s[k+'_act'] = $(k+'_act').value;
+   $(k+'_act').hidden = s[k+'_mode'] !== 'actual';
+ });
+
+ ALL_STATIC.forEach(f=>{if(f[4])$('r_'+f[0]).hidden=!f[4](s)});
  const r=calc(s);
- DED.forEach(([k])=>{$('a_'+k).textContent=+s[k]>0?'หักได้จริง '+f2(r.d[k])+' บาท'+(['p78','p79','p80'].includes(k)?' · เพดานของรายการนี้ = '+f2(r.caps[k])+' บาท':''):''});
- const rows=[['เงินได้ทั้งหมด',r.inc],['ค่าใช้จ่ายรวม',r.ex],['ค่าลดหย่อนและยกเว้นรวม',r.totDed],['เงินได้สุทธิ',r.net,1],['ภาษีตามมาตรา 48(1)',r.t1],['ภาษีตามมาตรา 48(2) (0.5%)',r.t2],['ภาษีที่ต้องชำระ',r.tax,1],['ภาษีที่ชำระไว้แล้ว',r.wht]];
- const F=r.form||(r.p94?'ภ.ง.ด. 94 (ม.ค.–มิ.ย.)':''),msg=r.refund>0?`ขอคืนภาษี ${f2(r.refund)} บาท`:r.due>0?`ชำระเพิ่ม ${f2(r.due)} บาท`:r.inc===0?'กรอกเงินได้เพื่อเริ่มคำนวณ':'ไม่มีภาษีต้องชำระหรือขอคืน';
+
+ // แสดงสรุปค่าใช้จ่ายแต่ละหมวด
+ const expMap = [
+   ['e3', r.exDetails.ex3],
+   ['e5', r.exDetails.ex5],
+   ['e6', r.exDetails.ex6],
+   ['e7', r.exDetails.ex7],
+   ['e8', r.exDetails.ex8]
+ ];
+ expMap.forEach(([k, val]) => {
+   $('a_'+k).textContent = val > 0 ? 'หักค่าใช้จ่ายได้ ' + f2(val) + ' บาท' : '';
+ });
+
+ DED.forEach(([k])=>{
+   $('a_'+k).textContent = +s[k]>0 ? 'หักได้จริง '+f2(r.d[k])+' บาท'+(['p78','p79','p80'].includes(k)?' · เพดานของรายการนี้ = '+f2(r.caps[k])+' บาท':'') : '';
+ });
+
+ const rows=[
+   ['เงินได้ทั้งหมด',r.inc],
+   ['ค่าใช้จ่ายรวม',r.ex],
+   ['ค่าลดหย่อนและยกเว้นรวม',r.totDed],
+   ['เงินได้สุทธิ',r.net,1],
+   ['ภาษีตามมาตรา 48(1)',r.t1],
+   ['ภาษีตามมาตรา 48(2) (0.5%)',r.t2],
+   ['ภาษีที่ต้องชำระ',r.tax,1],
+   ['ภาษีที่ชำระไว้แล้ว',r.wht]
+ ];
+ const F=r.form||(r.p94?'ภ.ง.ด. 94 (ม.ค.–มิ.ย.)':''),
+       msg=r.refund>0?`ขอคืนภาษี ${f2(r.refund)} บาท`:r.due>0?`ชำระเพิ่ม ${f2(r.due)} บาท`:r.inc===0?'กรอกเงินได้เพื่อเริ่มคำนวณ':'ไม่มีภาษีต้องชำระหรือขอคืน';
+ 
  $('res').innerHTML=rows.map(([a,v,k])=>`<tr class="${k?'k':''}"><td>${a}</td><td>${f2(v)}</td></tr>`).join('')+`<tr class="k"><td>สถานะ</td><td>${msg}</td></tr>`+(F?`<tr><td>แบบที่ต้องยื่น</td><td>${F}</td></tr>`:'');
- $('bs').textContent=msg;$('fm').textContent=F?(r.form?'แบบ ':'ต้องยื่น ')+F:'';$('n94').hidden=!r.p94;$('thr').textContent=r.thr.toLocaleString('en-US');
+ 
+ // ตารางขั้นบันไดภาษี
+ $('brackets').innerHTML = `
+   <thead><tr><th>ช่วงเงินได้สุทธิ (บาท)</th><th>อัตรา</th><th>เงินได้ในขั้น</th><th>ภาษี (บาท)</th></tr></thead>
+   <tbody>
+     ${r.bracketRows.map(b => `
+       <tr class="${b.taxAmt > 0 ? 'k' : ''}">
+         <td>${b.label}</td>
+         <td>${(b.rate*100).toFixed(0)}%</td>
+         <td>${f2(b.taxable)}</td>
+         <td>${f2(b.taxAmt)}</td>
+       </tr>
+     `).join('')}
+     <tr class="k"><td colspan="3">รวมภาษีตามขั้นบันได (มาตรา 48(1))</td><td>${f2(r.t1)}</td></tr>
+   </tbody>
+ `;
+
+ $('bs').textContent=msg;
+ $('fm').textContent=F?(r.form?'แบบ ':'ต้องยื่น ')+F:'';
+ $('n94').hidden=!r.p94;
+ $('thr').textContent=r.thr.toLocaleString('en-US');
 }
-document.addEventListener('input',up);document.addEventListener('change',up);up();
+document.addEventListener('input',up);
+document.addEventListener('change',up);
+up();
 </script></body></html>
