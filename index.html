@@ -32,11 +32,14 @@ button.btn-add:hover{background:var(--ac2)}
 button.btn-del{color:#d9534f;border-color:var(--bd)}
 button.btn-del:hover{background:rgba(217,83,79,0.1)}
 .exp-box{display:flex;flex-direction:column;gap:6px}
-.exp-info{font-size:.85rem;color:var(--ac);text-align:right;padding:4px 0}
 table{width:100%;border-collapse:collapse}td,th{padding:6px 4px;border-top:1px solid var(--bd);font-size:.92rem}
 td+td,th+th{text-align:right;font-variant-numeric:tabular-nums}
 th{text-align:left;color:var(--mu);font-weight:600;font-size:.84rem;border-top:0}
 tr.k td{font-weight:600}
+ul.ref-list{margin:6px 0 0;padding-left:20px;font-size:.9rem}
+ul.ref-list li{margin:4px 0}
+ul.ref-list a{color:var(--ac);text-decoration:none;word-break:break-all}
+ul.ref-list a:hover{text-decoration:underline}
 #bar{position:fixed;left:0;right:0;bottom:0;background:var(--ac2);color:var(--tx);border-top:2px solid var(--ac);padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));display:flex;justify-content:space-between;gap:10px;align-items:center;z-index:5}
 #bar small{opacity:.9}
 </style></head><body>
@@ -52,6 +55,14 @@ tr.k td{font-weight:600}
 </section>
 <section id="n94" hidden><h2>หมายเหตุ ภ.ง.ด. 94</h2><p class="mu">เงินได้ 40(5)-(8) ช่วง ม.ค.–มิ.ย. เกิน <span id="thr"></span> บาท จึงต้องยื่น ภ.ง.ด. 94 (ม.ค.–มิ.ย.)</p><p>โปรดตรวจสอบภาษีที่ชำระไว้ครึ่งปี (ภ.ง.ด.94) ผ่านระบบออนไลน์ของกรมสรรพากร หากภาษีรวมทั้งปีน้อยกว่าที่ภาษีที่ชำระไว้ครึ่งปี ท่านมีสิทธิขอคืนเงินภาษีในส่วนที่ชำระไว้เกินนั้นได้</p></section>
 <p class="mu">ผลลัพธ์เป็นการประมาณการเพื่อการวางแผน คำนวณตามสูตรที่กำหนดไว้ในต้นแบบ ไม่ใช่คำแนะนำทางภาษี โปรดตรวจสอบกับกรมสรรพากรก่อนยื่นจริง</p>
+<section>
+  <h2>ดูเพิ่มเติม</h2>
+  <ul class="ref-list">
+    <li>ประเภทเงินได้พึงประเมินและค่าลดหย่อน: <a href="https://www.rd.go.th/5937.html" target="_blank" rel="noopener noreferrer">https://www.rd.go.th/5937.html</a></li>
+    <li>การหักค่าใช้จ่ายจากเงินได้พึงประเมิน: <a href="https://rd.go.th/2375.html" target="_blank" rel="noopener noreferrer">https://rd.go.th/2375.html</a></li>
+    <li>การหักลดหย่อนเงินที่บริจาคแก่พรรคการเมือง: <a href="https://www.rd.go.th/fileadmin/user_upload/kormor/newlaw/dg357.pdf" target="_blank" rel="noopener noreferrer">https://www.rd.go.th/fileadmin/user_upload/kormor/newlaw/dg357.pdf</a></li>
+  </ul>
+</section>
 </main>
 <div id="bar"><div><b id="bs">—</b><br><small id="fm"></small></div></div>
 <script>
@@ -337,7 +348,6 @@ function up(){
  ALL_STATIC.forEach(f=>{if(f[4])$('r_'+f[0]).hidden=!f[4](s)});
  const r=calc(s);
 
- // แสดงสรุปค่าใช้จ่ายแต่ละหมวด
  const expMap = [
    ['e3', r.exDetails.ex3],
    ['e5', r.exDetails.ex5],
@@ -368,7 +378,6 @@ function up(){
  
  $('res').innerHTML=rows.map(([a,v,k])=>`<tr class="${k?'k':''}"><td>${a}</td><td>${f2(v)}</td></tr>`).join('')+`<tr class="k"><td>สถานะ</td><td>${msg}</td></tr>`+(F?`<tr><td>แบบที่ต้องยื่น</td><td>${F}</td></tr>`:'');
  
- // ตารางขั้นบันไดภาษี
  $('brackets').innerHTML = `
    <thead><tr><th>ช่วงเงินได้สุทธิ (บาท)</th><th>อัตรา</th><th>เงินได้ในขั้น</th><th>ภาษี (บาท)</th></tr></thead>
    <tbody>
