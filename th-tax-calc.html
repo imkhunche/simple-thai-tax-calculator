@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>เครื่องคำนวณภาษีเงินได้บุคคลธรรมดา</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f4f6f8;--card:#fff;--tx:#1b1f24;--mu:#5d6773;--bd:#dde2e7;--ac:#0a6c5b;--ac2:#e3f3ef;--in:#fffbe6;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14171a;--card:#1d2226;--tx:#e8ebee;--mu:#9aa4ae;--bd:#2e353b;--ac:#4cc3ad;--ac2:#17302b;--in:#262a1c;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#14171a;--card:#1d2226;--tx:#e8ebee;--mu:#9aa4ae;--bd:#2e353b;--ac:#4cc3ad;--ac2:#17302b;--in:#262a1c;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 'Noto Sans Thai','Sarabun',system-ui,sans-serif}
+main{max-width:720px;margin:0 auto;padding:16px 14px 110px}
+h1{font-size:1.4rem;margin:8px 0 4px}h2{font-size:1.05rem;margin:0 0 10px;color:var(--ac)}
+section{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin:14px 0}
+.mu{color:var(--mu);font-size:.88rem;margin:4px 0 8px}
+.r{display:grid;grid-template-columns:1fr minmax(120px,40%);gap:4px 10px;align-items:center;padding:6px 0;border-top:1px solid var(--bd)}
+.r:first-of-type{border-top:0}.r[hidden]{display:none}
+.r label{font-size:.92rem}
+input,select{width:100%;padding:8px;font:inherit;color:var(--tx);background:var(--in);border:1px solid var(--bd);border-radius:8px;text-align:right}
+select{text-align:left;background:var(--card)}
+.a{grid-column:1/-1;text-align:right;color:var(--ac);font-size:.8rem}
+.a:empty{display:none}
+table{width:100%;border-collapse:collapse}td{padding:6px 0;border-top:1px solid var(--bd)}td+td{text-align:right;font-variant-numeric:tabular-nums}
+tr.k td{font-weight:600}
+#bar{position:fixed;left:0;right:0;bottom:0;background:var(--ac);color:#fff;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));display:flex;justify-content:space-between;gap:10px;align-items:center;z-index:5}
+#bar small{opacity:.9}
+</style></head><body>
+<main>
+<h1>เครื่องคำนวณภาษีเงินได้บุคคลธรรมดา</h1>
+<p class="mu">กรอกตัวเลขเป็นบาท (ช่องสีเหลือง) ระบบคำนวณทันที ข้อมูลประมวลผลในเบราว์เซอร์ของคุณเท่านั้น ไม่มีการบันทึกหรือส่งออก</p>
+<div id="app"></div>
+<section><h2>ผลการคำนวณ</h2><table id="res"></table></section>
+<p class="mu">ผลลัพธ์เป็นการประมาณการเพื่อการวางแผน คำนวณตามสูตรที่กำหนดไว้ในต้นแบบ ไม่ใช่คำแนะนำทางภาษี โปรดตรวจสอบกับกรมสรรพากรก่อนยื่นจริง</p>
+</main>
+<div id="bar"><div><b id="st">—</b><br><small id="fm"></small></div></div>
+<script>
+//CALC_START
+function calc(s){
+ const n=k=>Math.max(0,+s[k]||0),R=a=>a.reduce((x,y)=>x+y,0),mn=Math.min,mx=Math.max;
+ const mar=s.st==='m',spNo=mar&&s.sp==='n';
+ const i=[1,2,3,4,5,6,7,8].map(k=>n('i'+k)),inc=R(i),inc2=R(i.slice(1));
+ const ex=mn((i[0]+i[1])*.5,1e5)+mn(i[2]*.5,1e5)+mn(n('e5'),i[4])+i[5]*.3+mn(n('e7'),i[6])+mn(n('e8'),i[7]);
+ const kn=Math.floor(n('kn')),k2=Math.floor(n('k2')),dn=Math.floor(n('dn'));
+ const pt=({f:1,m:1,b:2})[s.pa]||0;
+ const pc=pt+(spNo?mn(2,Math.floor(n('sp6'))):0);
+ const d={};
+ d.me=6e4;d.sp=spNo?6e4:0;
+ d.ch=s.ch==='y'&&kn>0&&s.ci==='l'?3e4*kn+3e4*mn(k2,mx(kn-1,0)):0;
+ d.p57=mn(n('p57'),6e4);
+ d.par=s.pi==='l'&&pc>0?3e4*mn(4,pc):0;
+ d.dis=s.dis==='y'&&dn>0&&s.di==='l'?6e4*dn:0;
+ d.p60=mn(n('p60'),15e3);d.p61=mn(n('p61'),25e3);
+ d.p63=mx(0,mn(n('p63'),1e5-d.p61));
+ d.p66=mx(0,mn(n('p66'),5e5,.15*i[0]));
+ d.p67=mx(0,mn(n('p67'),5e5-d.p66));
+ d.p68=mx(0,mn(n('p68'),5e5-d.p66-d.p67));
+ d.p69=mx(0,mn(n('p69'),5e5-d.p66-d.p67-d.p68));
+ const fund=d.p66+d.p67+d.p68+d.p69;
+ d.p64=mx(0,mn(n('p64'),.15*inc,2e5,5e5-fund));
+ d.p65=spNo?mn(n('p65'),1e4):0;
+ d.p70=mn(n('p70'),19e4);d.p71=mn(n('p71'),19e4);d.p72=mn(n('p72'),3e5);
+ d.p73=mx(0,mn(n('p73'),.15*inc,5e5-fund-d.p64));
+ d.p74=mn(n('p74'),1e5);d.p75=mn(n('p75'),.3*inc,5e4);d.p76=mn(n('p76'),9e3);
+ const X=R(['me','sp','ch','p57','par','dis','p60','p61','p63','p64','p65','p66','p67','p68','p69','p70','p71','p72','p73','p74','p75','p76'].map(k=>d[k]));
+ const b=mx(0,inc-ex-X);
+ d.p78=mn(2*n('p78'),.1*b);
+ d.p79=mx(0,mn(2*n('p79'),.1*b-d.p78));
+ d.p80=mx(0,mn(n('p80'),.1*(b-d.p78-d.p79)));
+ const totDed=X+d.p78+d.p79+d.p80,net=mx(0,inc-ex-totDed);
+ const t1=R([15e4,3e5,5e5,75e4,1e6,2e6,5e6].map(t=>mx(0,net-t)*.05));
+ const t2=inc2>=12e4?inc2*.005:0,tax=t2>5e3?mx(t1,t2):t1;
+ const wht=n('w1')+n('w2')+n('w3');
+ const half=n('h')>0?n('h'):R(i.slice(4));
+ const form=inc===0?'':inc2===0?'ภ.ง.ด. 91':'ภ.ง.ด. 90'+(half>(mar?12e4:6e4)?' และ ภ.ง.ด. 94 (ม.ค.–มิ.ย.)':'');
+ return{inc,ex,totDed,net,t1,t2,tax,wht,due:mx(0,tax-wht),refund:mx(0,wht-tax),form,d};
+}
+//CALC_END
+const LT=[['l','ไม่เกิน 30,000 บาท/ปี'],['g','เกิน 30,000 บาท/ปี']];
+const P=[
+['st','สถานะ','s',[['s','โสด/หม้าย'],['m','สมรส']]],
+['sp','คู่สมรส','s',[['i','มีรายได้'],['n','ไม่มีรายได้']],s=>s.st==='m'],
+['sp6','จำนวนบิดามารดาของคู่สมรส (0-2 คน)','n',0,s=>s.st==='m'&&s.sp==='n'],
+['ch','บุตร','s',[['n','ไม่มีบุตร'],['y','มีบุตร']]],
+['kn','จำนวนบุตร (คน)','n',0,s=>s.ch==='y'],
+['k2','บุตรคนที่ 2 ขึ้นไปที่เกิดตั้งแต่ปี 2561 (คน)','n',0,s=>s.ch==='y'],
+['ci','รายได้ของบุตร','s',LT,s=>s.ch==='y'],
+['pa','บิดามารดาของตนเอง (อายุ 60 ปีขึ้นไป)','s',[['n','ไม่มี'],['f','มีบิดา'],['m','มีมารดา'],['b','มีทั้งสองท่าน']]],
+['pi','รายได้ของบิดามารดา','s',LT,s=>s.pa!=='n'||(s.st==='m'&&s.sp==='n'&&+s.sp6>0)],
+['dis','ผู้พิการ/ทุพพลภาพที่อุปการะ','s',[['n','ไม่มี'],['y','มี']]],
+['dn','จำนวนผู้พิการ (คน)','n',0,s=>s.dis==='y'],
+['di','รายได้ของผู้พิการ','s',LT,s=>s.dis==='y'],
+['h','เงินได้ 40(5)-(8) ช่วง ม.ค.–มิ.ย. (ใช้ตรวจเกณฑ์ ภ.ง.ด.94 เว้นว่าง = ใช้เงินได้ทั้งปี)','n',0]];
+const INC=[['i1','40(1) เงินเดือน ค่าจ้าง โบนัส บำนาญ'],['i2','40(2) ค่านายหน้า ค่าธรรมเนียม เบี้ยประชุม'],['i3','40(3) กู๊ดวิลล์ ลิขสิทธิ์ เงินรายปี'],['i4','40(4) ดอกเบี้ย เงินปันผล ส่วนแบ่งกำไร'],['i5','40(5) ค่าเช่าทรัพย์สิน'],['i6','40(6) วิชาชีพอิสระ'],['i7','40(7) รับเหมา'],['i8','40(8) ธุรกิจ พาณิชย์ เกษตร อื่น ๆ']].map(a=>[...a,'n',0]);
+const EXP=[['e5','ค่าใช้จ่าย 40(5) (ตามจริงหรืออัตราเหมา)'],['e7','ค่าใช้จ่าย 40(7) (ตามจริงหรือเหมา 60%)'],['e8','ค่าใช้จ่าย 40(8) (ตามจริงหรืออัตราเหมา)']].map(a=>[...a,'n',0]);
+const DED=[['p57','ค่าฝากครรภ์และคลอดบุตร (ไม่เกิน 60,000)'],['p60','เบี้ยประกันสุขภาพบิดามารดา (ไม่เกิน 15,000)'],['p61','เบี้ยประกันสุขภาพตนเอง (ไม่เกิน 25,000)'],['p63','เบี้ยประกันชีวิตตนเอง (รวมสุขภาพไม่เกิน 100,000)'],['p64','เบี้ยประกันชีวิตแบบบำนาญ'],['p65','เบี้ยประกันชีวิตคู่สมรสไม่มีรายได้ (ไม่เกิน 10,000)'],['p66','กองทุนสำรองเลี้ยงชีพ'],['p67','กองทุนการออมแห่งชาติ (กอช.)'],['p68','กบข.'],['p69','กองทุนสงเคราะห์ครูโรงเรียนเอกชน'],['p70','เงินได้ผู้พิการ (ยกเว้นไม่เกิน 190,000)'],['p71','เงินได้ผู้อายุ 65 ปีขึ้นไป (ยกเว้นไม่เกิน 190,000)'],['p72','ค่าชดเชยตามกฎหมายแรงงาน (ไม่เกิน 300,000)'],['p73','กองทุน RMF'],['p74','ดอกเบี้ยเงินกู้ที่อยู่อาศัย (ไม่เกิน 100,000)'],['p75','โอนหน่วยลงทุน LTF ไป Thai ESGX (13 พ.ค.–30 มิ.ย. 2568 ถือครองไม่ต่ำกว่า 5 ปี ไม่เกิน 50,000 และ 30% ของเงินได้)'],['p76','เงินสมทบประกันสังคม (ไม่เกิน 9,000)'],['p78','บริจาคเพื่อการศึกษา (หักได้ 2 เท่า)'],['p79','ค่าใช้จ่ายและบริจาคที่หักได้ 2 เท่า'],['p80','บริจาคทั่วไป']].map(a=>[...a,'n',0]);
+const WH=[['w1','ภาษีหัก ณ ที่จ่ายจากเงินได้ 40(1) (50 ทวิ)'],['w2','ภาษีหัก ณ ที่จ่ายจากเงินได้ 40(2)-(8)'],['w3','ภาษีที่ชำระไว้แล้วตาม ภ.ง.ด.94 (ครึ่งปี)']].map(a=>[...a,'n',0]);
+const ALL=[...P,...INC,...EXP,...DED,...WH],$=id=>document.getElementById(id);
+const row=([k,l,t,o])=>`<div class="r" id="r_${k}"><label for="${k}">${l}</label>${t==='s'?`<select id="${k}">${o.map(([v,x])=>`<option value="${v}">${x}</option>`).join('')}</select>`:`<input id="${k}" type="number" inputmode="decimal" min="0" step="any" placeholder="0">`}<small class="a" id="a_${k}"></small></div>`;
+const sec=(h,rs,note)=>`<section><h2>${h}</h2>${note?`<p class="mu">${note}</p>`:''}${rs.map(row).join('')}</section>`;
+$('app').innerHTML=sec('1 ข้อมูลส่วนตัว',P,'ค่าลดหย่อนส่วนตัว 60,000 บาท และค่าลดหย่อนคู่สมรส บุตร บิดามารดา ผู้พิการ คำนวณให้อัตโนมัติ')+sec('2 เงินได้ทั้งปี (บาท)',INC)+sec('3 ค่าใช้จ่าย',EXP,'40(1)-(2) หักเหมา 50% รวมไม่เกิน 100,000 · 40(3) หัก 50% ไม่เกิน 100,000 · 40(6) หัก 30% · 40(4) ไม่มีค่าใช้จ่าย คำนวณให้อัตโนมัติ กรอกเฉพาะ 40(5) 40(7) 40(8) (ไม่เกินเงินได้ประเภทนั้น)')+sec('4 ค่าลดหย่อนและยกเว้น (กรอกจำนวนที่จ่ายจริง)',DED)+sec('5 ภาษีที่ชำระไว้แล้ว',WH);
+const f2=x=>x.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+function up(){
+ const s={};ALL.forEach(f=>s[f[0]]=$(f[0]).value);
+ ALL.forEach(f=>{if(f[4])$('r_'+f[0]).hidden=!f[4](s)});
+ const r=calc(s);
+ DED.forEach(([k])=>{$('a_'+k).textContent=+s[k]>0?'หักได้จริง '+f2(r.d[k])+' บาท':''});
+ const rows=[['เงินได้ทั้งหมด',r.inc],['ค่าใช้จ่ายรวม',r.ex],['ค่าลดหย่อนและยกเว้นรวม',r.totDed],['เงินได้สุทธิ',r.net,1],['ภาษีตามมาตรา 48(1)',r.t1],['ภาษีตามมาตรา 48(2) (0.5%)',r.t2],['ภาษีที่ต้องชำระ',r.tax,1],['ภาษีที่ชำระไว้แล้ว',r.wht]];
+ const msg=r.refund>0?`ขอคืนภาษี ${f2(r.refund)} บาท`:r.due>0?`ชำระเพิ่ม ${f2(r.due)} บาท`:'ไม่มีภาษีต้องชำระหรือขอคืน';
+ $('res').innerHTML=rows.map(([a,v,k])=>`<tr class="${k?'k':''}"><td>${a}</td><td>${f2(v)}</td></tr>`).join('')+`<tr class="k"><td>สถานะ</td><td>${msg}</td></tr>`+(r.form?`<tr><td>แบบที่ต้องยื่น</td><td>${r.form}</td></tr>`:'');
+ $('st').textContent=msg;$('fm').textContent=r.form?'แบบ '+r.form:'กรอกเงินได้เพื่อเริ่มคำนวณ';
+}
+document.addEventListener('input',up);document.addEventListener('change',up);up();
+</script></body></html>
