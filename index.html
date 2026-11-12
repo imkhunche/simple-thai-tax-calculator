@@ -23,7 +23,7 @@ select{text-align:left;background:var(--card)}
 .a:empty{display:none}
 table{width:100%;border-collapse:collapse}td{padding:6px 0;border-top:1px solid var(--bd)}td+td{text-align:right;font-variant-numeric:tabular-nums}
 tr.k td{font-weight:600}
-#bar{position:fixed;left:0;right:0;bottom:0;background:var(--ac);color:#fff;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));display:flex;justify-content:space-between;gap:10px;align-items:center;z-index:5}
+#bar{position:fixed;left:0;right:0;bottom:0;background:var(--ac2);color:var(--tx);border-top:2px solid var(--ac);padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));display:flex;justify-content:space-between;gap:10px;align-items:center;z-index:5}
 #bar small{opacity:.9}
 </style></head><body>
 <main>
@@ -33,7 +33,7 @@ tr.k td{font-weight:600}
 <section><h2>ผลการคำนวณ</h2><table id="res"></table></section>
 <p class="mu">ผลลัพธ์เป็นการประมาณการเพื่อการวางแผน คำนวณตามสูตรที่กำหนดไว้ในต้นแบบ ไม่ใช่คำแนะนำทางภาษี โปรดตรวจสอบกับกรมสรรพากรก่อนยื่นจริง</p>
 </main>
-<div id="bar"><div><b id="st">—</b><br><small id="fm"></small></div></div>
+<div id="bar"><div><b id="bs">—</b><br><small id="fm"></small></div></div>
 <script>
 //CALC_START
 function calc(s){
@@ -73,7 +73,7 @@ function calc(s){
  const wht=n('w1')+n('w2')+n('w3');
  const half=n('h')>0?n('h'):R(i.slice(4));
  const form=inc===0?'':inc2===0?'ภ.ง.ด. 91':'ภ.ง.ด. 90'+(half>(mar?12e4:6e4)?' และ ภ.ง.ด. 94 (ม.ค.–มิ.ย.)':'');
- return{inc,ex,totDed,net,t1,t2,tax,wht,due:mx(0,tax-wht),refund:mx(0,wht-tax),form,d};
+ return{inc,ex,totDed,net,t1,t2,tax,wht,due:mx(0,tax-wht),refund:mx(0,wht-tax),form,d,cap:.1*b};
 }
 //CALC_END
 const LT=[['l','ไม่เกิน 30,000 บาท/ปี'],['g','เกิน 30,000 บาท/ปี']];
@@ -104,11 +104,11 @@ function up(){
  const s={};ALL.forEach(f=>s[f[0]]=$(f[0]).value);
  ALL.forEach(f=>{if(f[4])$('r_'+f[0]).hidden=!f[4](s)});
  const r=calc(s);
- DED.forEach(([k])=>{$('a_'+k).textContent=+s[k]>0?'หักได้จริง '+f2(r.d[k])+' บาท':''});
+ DED.forEach(([k])=>{$('a_'+k).textContent=+s[k]>0?'หักได้จริง '+f2(r.d[k])+' บาท'+(['p78','p79','p80'].includes(k)?' · เพดานบริจาครวม (10% ของเงินได้หลังหักค่าใช้จ่ายและลดหย่อนอื่น) = '+f2(r.cap)+' บาท':''):''});
  const rows=[['เงินได้ทั้งหมด',r.inc],['ค่าใช้จ่ายรวม',r.ex],['ค่าลดหย่อนและยกเว้นรวม',r.totDed],['เงินได้สุทธิ',r.net,1],['ภาษีตามมาตรา 48(1)',r.t1],['ภาษีตามมาตรา 48(2) (0.5%)',r.t2],['ภาษีที่ต้องชำระ',r.tax,1],['ภาษีที่ชำระไว้แล้ว',r.wht]];
  const msg=r.refund>0?`ขอคืนภาษี ${f2(r.refund)} บาท`:r.due>0?`ชำระเพิ่ม ${f2(r.due)} บาท`:'ไม่มีภาษีต้องชำระหรือขอคืน';
  $('res').innerHTML=rows.map(([a,v,k])=>`<tr class="${k?'k':''}"><td>${a}</td><td>${f2(v)}</td></tr>`).join('')+`<tr class="k"><td>สถานะ</td><td>${msg}</td></tr>`+(r.form?`<tr><td>แบบที่ต้องยื่น</td><td>${r.form}</td></tr>`:'');
- $('st').textContent=msg;$('fm').textContent=r.form?'แบบ '+r.form:'กรอกเงินได้เพื่อเริ่มคำนวณ';
+ $('bs').textContent=msg;$('fm').textContent=r.form?'แบบ '+r.form:'กรอกเงินได้เพื่อเริ่มคำนวณ';
 }
 document.addEventListener('input',up);document.addEventListener('change',up);up();
 </script></body></html>
