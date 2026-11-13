@@ -198,7 +198,10 @@ const P=[
   ['pi','รายได้ของบิดามารดา','s',LT,s=>s.pa!=='n'||(s.st==='m'&&s.sp==='n'&&+s.sp6>0)],
   ['dis','ผู้พิการ/ทุพพลภาพที่อุปการะ','s',[['n','ไม่มี'],['y','มี']]],
   ['dn','จำนวนผู้พิการ (คน)','n',0,s=>s.dis==='y'],
-  ['di','รายได้ของผู้พิการ','s',LT,s=>s.dis==='y'],
+  ['di','รายได้ของผู้พิการ','s',LT,s=>s.dis==='y']
+];
+
+const H_FIELD=[
   ['h','เงินได้ 40(5)-(8) ช่วง ม.ค.–มิ.ย.<br>(ใช้ตรวจเกณฑ์ ภ.ง.ด.94 เว้นว่าง = ใช้เงินได้ทั้งปี)','n',0]
 ];
 
@@ -240,7 +243,7 @@ const WH=[
   ['w3','ภาษีที่ชำระไว้แล้วตาม ภ.ง.ด.94 (ครึ่งปี)']
 ].map(a=>[...a,'n',0]);
 
-const ALL_STATIC=[...P,...INC_STATIC,...DED,...WH], $=id=>document.getElementById(id);
+const ALL_STATIC=[...P,...INC_STATIC,...H_FIELD,...DED,...WH], $=id=>document.getElementById(id);
 
 const row=([k,l,t,o])=>`<div class="r" id="r_${k}"><label for="${k}">${l}</label>${t==='s'?`<select id="${k}">${o.map(([v,x])=>`<option value="${v}">${x}</option>`).join('')}</select>`:`<input id="${k}" type="number" inputmode="decimal" min="0" step="any" placeholder="0">`}<small class="a" id="a_${k}"></small></div>`;
 
@@ -285,7 +288,7 @@ function buildExpSection() {
 
 $('app').innerHTML =
   `<section><h2>1 ข้อมูลส่วนตัว</h2><p class="mu">ค่าลดหย่อนส่วนตัว 60,000 บาท และค่าลดหย่อนคู่สมรส บุตร บุตรบุญธรรม บิดามารดา ผู้พิการ คำนวณให้อัตโนมัติ</p>${P.map(row).join('')}</section>` +
-  `<section><h2>2 เงินได้ทั้งปี (บาท)</h2>${INC_STATIC.map(row).join('')}${buildDynSection()}</section>` +
+  `<section><h2>2 เงินได้ทั้งปี (บาท)</h2>${INC_STATIC.map(row).join('')}${buildDynSection()}${H_FIELD.map(row).join('')}</section>` +
   `<section><h2>3 ค่าใช้จ่าย</h2><p class="mu">40(1)-(2) หักเหมา 50% รวมไม่เกิน 100,000<br>40(4) ไม่มีการหักค่าใช้จ่าย<br>หมวด 40(3), 40(5)–40(8) เลือกหักอัตราเหมาหรือหักตามจริงได้ด้านล่าง</p>${buildExpSection()}</section>` +
   `<section><h2>4 ค่าลดหย่อนและยกเว้น (กรอกจำนวนที่จ่ายจริง)</h2>${DED.slice(0,-3).map(row).join('')}</section>` +
   `<section><h2>5 เงินบริจาค</h2><p class="mu">บริจาคเพื่อการศึกษา และค่าใช้จ่าย/บริจาค 2 เท่า รวมกันไม่เกิน 10% ของเงินได้หลังหักค่าใช้จ่ายและค่าลดหย่อนอื่น · บริจาคทั่วไปไม่เกิน 10% ของเงินได้ส่วนที่เหลือหลังหักบริจาค 2 เท่า (ไม่รวมบริจาคพรรคการเมือง)</p>${DED.slice(-3).map(row).join('')}</section>` +
