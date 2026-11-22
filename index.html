@@ -33,6 +33,8 @@ button.btn-add{color:var(--ac);border-color:var(--ac);align-self:flex-start;marg
 button.btn-add:hover{background:var(--ac2)}
 button.btn-del{color:#d9534f;border-color:var(--bd)}
 button.btn-del:hover{background:rgba(217,83,79,0.1)}
+button.btn-info{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;margin-left:6px;padding:0;border-radius:50%;border:1px solid var(--ac);background:var(--ac2);color:var(--ac);font-size:.78rem;font-weight:600;cursor:pointer;vertical-align:middle;line-height:1}
+button.btn-info:hover{background:var(--ac);color:#fff}
 .exp-box{display:flex;flex-direction:column;gap:6px}
 table{width:100%;border-collapse:collapse}td,th{padding:6px 4px;border-top:1px solid var(--bd);font-size:.92rem}
 td+td,th+th{text-align:right;font-variant-numeric:tabular-nums}
@@ -44,10 +46,40 @@ ul.ref-list a{color:var(--ac);text-decoration:none;word-break:break-all}
 ul.ref-list a:hover{text-decoration:underline}
 #bar{position:fixed;left:0;right:0;bottom:0;background:var(--ac2);color:var(--tx);border-top:2px solid var(--ac);padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));display:flex;justify-content:space-between;gap:10px;align-items:center;z-index:5}
 #bar small{opacity:.9}
+.btn-ocr{color:var(--ac);border-color:var(--ac);font-size:.82rem;padding:4px 10px}
+.ocr-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px;z-index:20}
+.ocr-overlay[hidden]{display:none}
+.ocr-box{background:var(--card);border-radius:14px;padding:18px;max-width:480px;width:100%;max-height:88vh;overflow-y:auto;display:flex;flex-direction:column;gap:10px}
+.ocr-box h3{margin:0 0 2px;font-size:1rem;color:var(--ac)}
+.ocr-box img{max-width:100%;border-radius:8px;border:1px solid var(--bd)}
+.ocr-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:4px}
+#ocrRawText{white-space:pre-wrap;font-size:.78rem;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:8px;max-height:140px;overflow-y:auto}
+.ocr-field label{font-size:.85rem;display:block;margin-bottom:2px}
+.excel-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 10px;
+  padding: 6px 14px;
+  background: var(--ac2);
+  color: var(--ac);
+  border: 1px solid var(--ac);
+  border-radius: 8px;
+  font-size: .9rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.excel-tab:hover {
+  background: var(--ac);
+  color: #fff;
+}
 </style></head><body>
 <main>
 <h1>เครื่องคำนวณภาษีเงินได้บุคคลธรรมดา</h1>
-<p class="mu">กรอกตัวเลขเป็นบาท (ช่องสีเหลือง) ระบบคำนวณทันที<br>ข้อมูลประมวลผลในเบราว์เซอร์ของคุณเท่านั้น ไม่มี การบันทึกหรือส่งออก</p>
+<a class="excel-tab" href="Tax_Dashboard_updated.xlsx" download="Tax_Dashboard_updated.xlsx">
+  📊 ฉบับไฟล์ Excel คลิกที่นี่
+</a>
+<p class="mu">กรอกตัวเลขเป็นบาท (ช่องสีเหลือง) ระบบคำนวณทันที<br>ข้อมูลประมวลผลในเบราว์เซอร์ของคุณเท่านั้น ไม่มีการบันทึกหรือส่งออก</p>
 <div id="app"></div>
 <section>
   <h2>ผลการคำนวณ</h2>
@@ -65,6 +97,43 @@ ul.ref-list a:hover{text-decoration:underline}
     <li>การหักลดหย่อนเงินที่บริจาคแก่พรรคการเมือง: <a href="https://www.rd.go.th/fileadmin/user_upload/kormor/newlaw/dg357.pdf" target="_blank" rel="noopener noreferrer">https://www.rd.go.th/fileadmin/user_upload/kormor/newlaw/dg357.pdf</a></li>
   </ul>
 </section>
+
+<div id="infoModal" class="ocr-overlay" hidden onclick="if(event.target===this)closeInfoModal()">
+  <div class="ocr-box">
+    <h3 id="infoModalTitle">ข้อมูลเพิ่มเติม</h3>
+    <p id="infoModalBody" style="margin:4px 0;font-size:.94rem"></p>
+    <div class="ocr-actions">
+      <button type="button" class="btn btn-add" onclick="closeInfoModal()">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<div id="ocrModal" class="ocr-overlay" hidden>
+  <div class="ocr-box">
+    <h3>แนบเอกสารเพื่อตรวจเบื้องต้น</h3>
+    <p class="mu" style="margin:0">ประมวลผลในเบราว์เซอร์ของคุณเท่านั้น ไม่มี การอัปโหลดรูปภาพนี้ไปที่เซิร์ฟเวอร์ใด ๆ ทั้งสิ้น ผลลัพธ์เป็นการอ่านเบื้องต้นด้วยโปรแกรม OCR เท่านั้น โปรดตรวจสอบตัวเลขก่อนยืนยันทุกครั้ง</p>
+    <input type="file" id="ocrFile" accept="image/*" capture="environment">
+    <div id="ocrPreviewWrap" hidden><img id="ocrPreview" alt="ตัวอย่างเอกสาร"></div>
+    <button type="button" class="btn btn-add" id="ocrRunBtn" hidden>เริ่มอ่านเอกสาร</button>
+    <div id="ocrStatus" class="mu"></div>
+    <div id="ocrResult" hidden style="display:flex;flex-direction:column;gap:10px">
+      <div class="ocr-field">
+        <label for="ocrAmount">จำนวนเงิน (บาท) — ตรวจพบจากเอกสาร โปรดตรวจสอบ/แก้ไขก่อนยืนยัน</label>
+        <input type="number" id="ocrAmount" inputmode="decimal" step="any">
+      </div>
+      <div class="ocr-field">
+        <label for="ocrWht">ภาษีหัก ณ ที่จ่าย ถ้ามี (บาท) — จะถูกบวกเพิ่มเข้าช่อง "ภาษีหัก ณ ที่จ่าย" ในข้อ 6 อัตโนมัติ</label>
+        <input type="number" id="ocrWht" inputmode="decimal" step="any">
+        <small id="ocrWhtHint" class="mu" style="margin:4px 0 0;display:block"></small>
+      </div>
+      <details><summary class="mu" style="cursor:pointer">ข้อความที่อ่านได้ทั้งหมด (ดิบ)</summary><pre id="ocrRawText"></pre></details>
+    </div>
+    <div class="ocr-actions">
+      <button type="button" class="btn" onclick="closeOcrModal()">ยกเลิก</button>
+      <button type="button" class="btn btn-add" id="ocrConfirmBtn" hidden onclick="confirmOcr()">ยืนยันและกรอกข้อมูล</button>
+    </div>
+  </div>
+</div>
 </main>
 <div id="bar"><div><b id="bs">—</b><br><small id="fm"></small></div></div>
 <script>
@@ -76,8 +145,8 @@ const R5_OPTS = [
   ['0.10', 'ทรัพย์สินอื่น (หักเหมา 10%)']
 ];
 const R6_OPTS = [
-  ['0.60', 'การประกอบโรคศิลปะ (แพทย์) (หักเหมา 60%)'],
-  ['0.30', 'กฎหมาย/วิศวกรรม/สถาปัตยกรรม/บัญชี/ประณีตศิลปกรรม/อื่น ๆ (หักเหมา 30%)']
+  ['0.60', 'การประกอบโรคศิลปะ (แพทย์)/ประณีตศิลปกรรม (หักเหมา 60%)'],
+  ['0.30', 'กฎหมาย/วิศวกรรม/สถาปัตยกรรม/บัญชี/อื่น ๆ (หักเหมา 30%)']
 ];
 const R8_OPTS = [
   ['step','นักแสดงสาธารณะ (ละคร/ภาพยนตร์/วิทยุ/โทรทัศน์/นักร้อง/นักดนตรี/นักกีฬาอาชีพ) — 60% ส่วนไม่เกิน 300,000 + 40% ส่วนเกิน รวมไม่เกิน 600,000'],
@@ -164,6 +233,8 @@ const dynDed = {
   p75: [{ amount: 0 }],
   pe: [{ amount: 0 }],
   solar: [{ amount: 0 }],
+  se: [{ amount: 0 }],
+  art: [{ amount: 0 }],
   p76: [{ amount: 0 }],
   pol: [{ amount: 0 }]
 };
@@ -201,16 +272,16 @@ function calc(s){
  const i5 = sumDyn('i5'), i6 = sumDyn('i6'), i7 = sumDyn('i7'), i8 = sumDyn('i8');
  const i=[i1, i2, i3, i4, i5, i6, i7, i8], inc=R(i), inc2=R(i.slice(1));
 
- // PVD: 10,000 บาทแรก = ค่าลดหย่อน / ส่วนที่เกิน = เงินได้ยกเว้น ไม่เกิน 15% ของค่าจ้าง 40(1) (หักออกก่อนคำนวณค่าใช้จ่าย)
-  // เงินได้ยกเว้นที่หักก่อนค่าใช้จ่าย: PVD ส่วนเกิน 10,000, กบข., กองทุนครูฯ, ค่าชดเชยตามกฎหมายแรงงาน
-  const pvdPaid = R(dynDed.p66.map(x => Math.max(0, +x.amount || 0)));
-  const pvdTot = mx(0, mn(pvdPaid, 1e4 + 0.15*i1, 5e5));
-  const pvdA = mn(pvdTot, 1e4), pvdE = pvdTot - pvdA;
+ // ลำดับตามกรมสรรพากร: A = 40(1)+40(2) - เงินได้ยกเว้น (PVD ส่วนเกิน 10,000 บาทแรก, กบข., กองทุนครูฯ, ค่าชดเชย) -> หักค่าใช้จ่าย 50% สูงสุด 100,000
+  // PVD 10,000 บาทแรกเป็นค่าลดหย่อน; ส่วนที่เกินยกเว้นไม่เกิน 15% ของค่าจ้าง 40(1); กลุ่มเกษียณรวมกันไม่เกิน 500,000
   const dsum = k => R(dynDed[k].map(x => Math.max(0, +x.amount || 0)));
-  const gpf = mx(0, mn(dsum('p68'), 5e5 - pvdTot));   // กบข.
-  const tch = mx(0, mn(dsum('p69'), 5e5));            // กองทุนสงเคราะห์ครูโรงเรียนเอกชน
-  const sev = mn(dsum('p72'), 3e5);                   // ค่าชดเชยตามกฎหมายแรงงาน
-  const exempt = mn(pvdE + gpf + tch + sev, i1 + i2); // A = 40(1)+40(2) - เงินได้ยกเว้น (ก่อนหักค่าใช้จ่าย 50%)
+  const pvdTot = mx(0, mn(dsum('p66'), 1e4 + 0.15*i1, 5e5));
+  const pvdA = mn(pvdTot, 1e4), pvdE = pvdTot - pvdA;
+  const kos = mx(0, mn(dsum('p67'), 3e4, 5e5 - pvdTot));
+  const gpf = mx(0, mn(dsum('p68'), 5e5 - pvdTot - kos));
+  const tch = mx(0, mn(dsum('p69'), 5e5 - pvdTot - kos - gpf));
+  const sev = mn(dsum('p72'), 3e5);
+  const exempt = mn(pvdE + gpf + tch + sev, i1 + i2);
   const ex12 = mn((i1 + i2 - exempt) * 0.5, 1e5);
  const sumExpAct = k => R(dynExpAct[k].map(x => Math.max(0, +x.amount || 0)));
  const ex3 = s.e3_mode === 'actual' ? mn(sumExpAct('e3'), i3) : mn(i3*0.5, 1e5);
@@ -256,24 +327,26 @@ function calc(s){
  d.p61=mn(sumDynFlat('p61'),25e3);
  d.p63=mx(0,mn(sumDynFlat('p63'),1e5-d.p61));
  d.p66=pvdA; d.pvdx=pvdE;
- d.p67=mx(0,mn(sumDynFlat('p67'),3e4));
+ d.p67=kos;
  d.p68=gpf;
  d.p69=tch;
  const fund=pvdTot+d.p67+d.p68+d.p69;
- d.p64=mx(0,mn(sumDynFlat('p64'),.15*inc,5e5-fund));
+ d.p64=mx(0,mn(sumDynFlat('p64'),.15*inc,2e5,5e5-fund));
  d.p65=spNo?mn(sumDynFlat('p65'),1e4):0;
  d.p70=mn(sumDynFlat('p70'),19e4);
  d.p71=mn(sumDynFlat('p71'),19e4);
  d.p72=sev;
- d.p73=mx(0,mn(sumDynFlat('p73'),.15*inc,500000-fund-d.p64));
+ d.p73=mx(0,mn(sumDynFlat('p73'),.15*inc,5e5-fund-d.p64));
  d.p74=mn(sumDynFlat('p74'),1e5);
- d.p75=mn(sumDynFlat('p75'),.3*inc,50000);
- d.pe=mn(sumDynFlat('pe'),.3*inc,300000);
+ d.pe=mn(sumDynFlat('pe'),.3*inc,3e5);
  d.solar=mn(sumDynFlat('solar'),2e5);
+ d.se=mn(sumDynFlat('se'),1e5);
+ d.art=mn(sumDynFlat('art'),1e5);
  d.p76=mn(sumDynFlat('p76'),9e3);
  d.pol=mn(sumDynFlat('pol'),1e4);
+ d.p75=mn(sumDynFlat('p75'),.3*inc,50000);
 
- const X=R(['me','sp','ch','ad','p57','par','dis','p60','p61','p63','p64','p65','p66','p67','p70','p71','p73','p74','pe','solar','p75','p76','pol'].map(k=>d[k]));
+ const X=R(['me','sp','ch','ad','p57','par','dis','p60','p61','p63','p64','p65','p66','p67','p70','p71','p73','p74','pe','solar','se','art','p75','p76','pol'].map(k=>d[k]));
  const b=mx(0,inc-ex-X-exempt);
  const p78_val = sumDonFlat('p78');
  const p79_val = sumDonFlat('p79');
@@ -346,6 +419,8 @@ const DED=[
   ['p75','กองทุน Thai ESGX (โอนหน่วยลงทุน LTF ไป Thai ESGX ระหว่าง 13 พ.ค. – 30 มิ.ย. 2568, ถือต่อไม่น้อยกว่า 5 ปี, ลดหย่อนได้สูงสุดไม่เกิน 50,000 บาท และไม่เกิน 30% ของเงินได้พึงประเมิน)'],
   ['pe','กองทุน Thai ESG (1 ม.ค. 2567 – 31 ธ.ค. 2569, ถือต่อเนื่องไม่น้อยกว่า 5 ปี, สูงสุด 30% ของเงินได้ ไม่เกิน 300,000 บาท)'],
   ['solar','ค่าติดตั้งโซลาร์เซลล์ที่อยู่อาศัย (จ่ายจริงสูงสุดไม่เกิน 200,000 บาท, 3 มี.ค. 2569 – 31 ธ.ค. 2571, On-Grid/Hybrid เชื่อมกฟน./กฟภ. ไม่เกิน 10 kWp, ที่อยู่ผู้ยื่นภาษี 1 ครั้ง/ระบบ, ไม่ซ้อนสิทธิ์อื่น)'],
+  ['se','เงินลงทุนวิสาหกิจเพื่อสังคม (ตามจ่ายจริงไม่เกิน 100,000 บาท)'],
+  ['art','ซื้องานศิลปะ (ลดหย่อนได้ไม่เกิน 100,000 บาท) <button type="button" class="btn-info" onclick="openInfoModal(\'ซื้องานศิลปะ\', \'ระหว่างปีพ.ศ. 2568-2570, ต้องซื้อจากศิลปินแห่งชาติสาขาทัศนศิลป์ ศิลปินศิลปาธรสาขาทัศนศิลป์ ศิลปินที่ขึ้นทะเบียนกับสำนักงานศิลปวัฒนธรรมร่วมสมัย หรือนิติบุคคล มูลนิธิ สมาคม ที่จำหน่ายหรือประมูลงานของศิลปินดังกล่าว\')" aria-label="ข้อมูลเพิ่มเติม">i</button>'],
   ['p76','เงินสมทบประกันสังคม (ไม่เกิน 9,000 บาท)'],
   ['pol','เงินบริจาคพรรคการเมือง<br>(สูงสุดไม่เกิน 10,000 บาท/ปี ไม่รวมในเพดาน 10%)']
 ].map(a=>[...a,'n',0]);
@@ -362,7 +437,7 @@ const WH=[
   ['w3','ภาษีที่ชำระไว้แล้วตาม ภ.ง.ด.94 (ครึ่งปี)']
 ].map(a=>[...a,'n',0]);
 
-const row = ([k, l, t, o]) => `
+const row = ([k, l, t, o], hasOcr = true) => `
   <div class="r" id="r_${k}">
     <label for="${k}">${l}</label>
     <div class="input-row">
@@ -370,6 +445,7 @@ const row = ([k, l, t, o]) => `
         ? `<select id="${k}">${o.map(([v, x]) => `<option value="${v}">${x}</option>`).join('')}</select>` 
         : `<input id="${k}" type="number" inputmode="decimal" min="0" step="any" placeholder="0">`
       }
+      ${hasOcr ? `<button type="button" class="btn btn-ocr" onclick="openOcrModalField('${k}')">📎 แนบเอกสาร</button>` : ''}
     </div>
     <small class="a" id="a_${k}"></small>
   </div>`;
@@ -395,6 +471,15 @@ function buildDynSection() {
 }
 
 const $ = id => document.getElementById(id);
+
+window.openInfoModal = function(title, body) {
+  $('infoModalTitle').textContent = title;
+  $('infoModalBody').textContent = body;
+  $('infoModal').hidden = false;
+};
+window.closeInfoModal = function() {
+  $('infoModal').hidden = true;
+};
 
 function buildExpSection() {
   const items = [
@@ -422,7 +507,7 @@ function buildExpSection() {
   `).join('');
 }
 
-function buildMultiListSection(title, listObj, addFnName) {
+function buildMultiListSection(title, listObj, renderFnName, addFnName) {
   return Object.keys(listObj).map(key => {
     let label = '';
     const allLists = [...DED, ...DONATION, ...WH];
@@ -440,12 +525,12 @@ function buildMultiListSection(title, listObj, addFnName) {
 }
 
 $('app').innerHTML =
-  `<section><h2>1 ข้อมูลส่วนตัว</h2><p class="mu">ค่าลดหย่อนส่วนตัว 60,000 บาท และค่าลดหย่อนคู่สมรส บุตร บุตรบุญธรรม บิดามารดา ผู้พิการ คำนวณให้อัตโนมัติ</p>${P.map(f => row(f)).join('')}</section>` +
-  `<section><h2>2 เงินได้ทั้งปี (บาท)</h2>${buildDynSection()}${H_FIELD.map(f => row(f)).join('')}</section>` +
+  `<section><h2>1 ข้อมูลส่วนตัว</h2><p class="mu">ค่าลดหย่อนส่วนตัว 60,000 บาท และค่าลดหย่อนคู่สมรส บุตร บุตรบุญธรรม บิดามารดา ผู้พิการ คำนวณให้อัตโนมัติ</p>${P.map(f => row(f, false)).join('')}</section>` +
+  `<section><h2>2 เงินได้ทั้งปี (บาท)</h2>${buildDynSection()}${H_FIELD.map(f => row(f, true)).join('')}</section>` +
   `<section><h2>3 ค่าใช้จ่าย</h2><p class="mu">40(1)-(2) หักเหมา 50% รวมไม่เกิน 100,000<br>40(4) ไม่มีการหักค่าใช้จ่าย<br>หมวด 40(3), 40(5)–40(8) เลือกหักอัตราเหมาหรือหักตามจริงได้ด้านล่าง</p>${buildExpSection()}</section>` +
-  `<section><h2>4 ค่าลดหย่อนและยกเว้น</h2>${buildMultiListSection('ค่าลดหย่อน', dynDed, 'addMultiDedItem')}</section>` +
-  `<section><h2>5 เงินบริจาค</h2><p class="mu">บริจาคเพื่อการศึกษา และค่าใช้จ่าย/บริจาค 2 เท่า รวมกันไม่เกิน 10% ของเงินได้หลังหักค่าใช้จ่ายและค่าลดหย่อนอื่น · บริจาคทั่วไปไม่เกิน 10% ของเงินได้ส่วนที่เหลือหลังหักบริจาค 2 เท่า (ไม่รวมบริจาคพรรคการเมือง)</p>${buildMultiListSection('เงินบริจาค', dynDonation, 'addMultiDonationItem')}</section>` +
-  `<section><h2>6 ภาษีที่ชำระไว้แล้ว</h2><p class="mu">โปรดตรวจสอบภาษีที่ชำระไว้ครึ่งปี (ภ.ง.ด.94) ผ่านระบบออนไลน์ของกรมสรรพากร<br>หากภาษีรวมทั้งปีน้อยกว่าที่ภาษีที่ชำระไว้ครึ่งปี ท่านมีสิทธิขอคืนเงินภาษีในส่วนที่ชำระไว้เกินนั้นได้</p>${buildMultiListSection('ภาษีที่ชำระไว้แล้ว', dynWh, 'addMultiWhItem')}</section>`;
+  `<section><h2>4 ค่าลดหย่อนและยกเว้น</h2>${buildMultiListSection('ค่าลดหย่อน', dynDed, 'renderMultiItem', 'addMultiDedItem')}</section>` +
+  `<section><h2>5 เงินบริจาค</h2><p class="mu">บริจาคเพื่อการศึกษา และค่าใช้จ่าย/บริจาค 2 เท่า รวมกันไม่เกิน 10% ของเงินได้หลังหักค่าใช้จ่ายและค่าลดหย่อนอื่น · บริจาคทั่วไปไม่เกิน 10% ของเงินได้ส่วนที่เหลือหลังหักบริจาค 2 เท่า (ไม่รวมบริจาคพรรคการเมือง)</p>${buildMultiListSection('เงินบริจาค', dynDonation, 'renderMultiItem', 'addMultiDonationItem')}</section>` +
+  `<section><h2>6 ภาษีที่ชำระไว้แล้ว</h2><p class="mu">โปรดตรวจสอบภาษีที่ชำระไว้ครึ่งปี (ภ.ง.ด.94) ผ่านระบบออนไลน์ของกรมสรรพากร<br>หากภาษีรวมทั้งปีน้อยกว่าที่ภาษีที่ชำระไว้ครึ่งปี ท่านมีสิทธิขอคืนเงินภาษีในส่วนที่ชำระไว้เกินนั้นได้</p>${buildMultiListSection('ภาษีที่ชำระไว้แล้ว', dynWh, 'renderMultiItem', 'addMultiWhItem')}</section>`;
 
 function renderDynList(key) {
   const container = $('list_' + key);
@@ -466,6 +551,7 @@ function renderDynList(key) {
       ` : ''}
       <div class="sub-row">
         <input type="number" inputmode="decimal" min="0" step="any" placeholder="0" value="${item.amount || ''}" oninput="updateDynAmt('${key}', ${idx}, this.value)">
+        <button type="button" class="btn btn-ocr" onclick="openOcrModalDyn('${key}', ${idx})">📎 แนบเอกสาร</button>
         ${items.length > 1 ? `<button type="button" class="btn btn-del" onclick="delDynItem('${key}', ${idx})">ลบรายการ</button>` : ''}
       </div>
       ${note}
@@ -481,13 +567,14 @@ function renderExpActList(key) {
     <div class="sub-item">
       <div class="sub-row">
         <input type="number" inputmode="decimal" min="0" step="any" placeholder="กรอกค่าใช้จ่ายตามจริง (บาท)" value="${item.amount || ''}" oninput="updateExpActAmt('${key}', ${idx}, this.value)">
+        <button type="button" class="btn btn-ocr" onclick="openOcrModalExpAct('${key}', ${idx})">📎 แนบเอกสาร</button>
         ${items.length > 1 ? `<button type="button" class="btn btn-del" onclick="delExpActItem('${key}', ${idx})">ลบรายการ</button>` : ''}
       </div>
     </div>
   `).join('');
 }
 
-function renderMultiList(storeObj, prefix, delFnName) {
+function renderMultiList(storeObj, prefix, ocrFnName, delFnName) {
   Object.keys(storeObj).forEach(key => {
     const container = $('list_multi_' + key);
     if (!container) return;
@@ -496,6 +583,7 @@ function renderMultiList(storeObj, prefix, delFnName) {
       <div class="sub-item">
         <div class="sub-row">
           <input type="number" inputmode="decimal" min="0" step="any" placeholder="0" value="${item.amount || ''}" oninput="updateMultiAmt('${prefix}', '${key}', ${idx}, this.value)">
+          <button type="button" class="btn btn-ocr" onclick="${ocrFnName}('${key}', ${idx})">📎 แนบเอกสาร</button>
           ${items.length > 1 ? `<button type="button" class="btn btn-del" onclick="${delFnName}('${key}', ${idx})">ลบรายการ</button>` : ''}
         </div>
       </div>
@@ -556,39 +644,39 @@ window.updateExpActAmt = function(key, idx, val) {
 
 window.addMultiDedItem = function(key) {
   dynDed[key].push({ amount: 0 });
-  renderMultiList(dynDed, 'ded', 'delMultiDedItem');
+  renderMultiList(dynDed, 'ded', 'openOcrModalDed', 'delMultiDedItem');
   up();
 };
 window.delMultiDedItem = function(key, idx) {
   if (dynDed[key].length > 1) {
     dynDed[key].splice(idx, 1);
-    renderMultiList(dynDed, 'ded', 'delMultiDedItem');
+    renderMultiList(dynDed, 'ded', 'openOcrModalDed', 'delMultiDedItem');
     up();
   }
 };
 
 window.addMultiDonationItem = function(key) {
   dynDonation[key].push({ amount: 0 });
-  renderMultiList(dynDonation, 'don', 'delMultiDonationItem');
+  renderMultiList(dynDonation, 'don', 'openOcrModalDon', 'delMultiDonationItem');
   up();
 };
 window.delMultiDonationItem = function(key, idx) {
   if (dynDonation[key].length > 1) {
     dynDonation[key].splice(idx, 1);
-    renderMultiList(dynDonation, 'don', 'delMultiDonationItem');
+    renderMultiList(dynDonation, 'don', 'openOcrModalDon', 'delMultiDonationItem');
     up();
   }
 };
 
 window.addMultiWhItem = function(key) {
   dynWh[key].push({ amount: 0 });
-  renderMultiList(dynWh, 'wh', 'delMultiWhItem');
+  renderMultiList(dynWh, 'wh', 'openOcrModalWh', 'delMultiWhItem');
   up();
 };
 window.delMultiWhItem = function(key, idx) {
   if (dynWh[key].length > 1) {
     dynWh[key].splice(idx, 1);
-    renderMultiList(dynWh, 'wh', 'delMultiWhItem');
+    renderMultiList(dynWh, 'wh', 'openOcrModalWh', 'delMultiWhItem');
     up();
   }
 };
@@ -602,9 +690,9 @@ window.updateMultiAmt = function(prefix, key, idx, val) {
 
 ['i1','i2','i3','i4','i5','i6','i7','i8'].forEach(renderDynList);
 ['e3','e5','e6','e7','e8'].forEach(renderExpActList);
-renderMultiList(dynDed, 'ded', 'delMultiDedItem');
-renderMultiList(dynDonation, 'don', 'delMultiDonationItem');
-renderMultiList(dynWh, 'wh', 'delMultiWhItem');
+renderMultiList(dynDed, 'ded', 'openOcrModalDed', 'delMultiDedItem');
+renderMultiList(dynDonation, 'don', 'openOcrModalDon', 'delMultiDonationItem');
+renderMultiList(dynWh, 'wh', 'openOcrModalWh', 'delMultiWhItem');
 
 const f2=x=>x.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 function up(){
@@ -641,12 +729,20 @@ function up(){
  }
 
  Object.keys(r.d).forEach(k => {
-   const el = $('a_' + k);
-   if (el) {
-     const val = r.d[k];
-     el.textContent = val > 0 ? 'หักลดหย่อนได้จริง ' + f2(val) + ' บาท' : '';
-   }
- });
+    const el = $('a_' + k);
+    if (!el) return;
+    const val = r.d[k];
+    if (k === 'p66') {
+      const parts = [];
+      if (val > 0) parts.push('หักลดหย่อนได้จริง ' + f2(val) + ' บาท');
+      if (r.pvdE > 0) parts.push('ยกเว้นเงินได้ ' + f2(r.pvdE) + ' บาท (หักก่อนค่าใช้จ่าย)');
+      el.innerHTML = parts.join('<br>');
+    } else if (k === 'p68' || k === 'p69' || k === 'p72') {
+      el.textContent = val > 0 ? 'ยกเว้นเงินได้ ' + f2(val) + ' บาท (หักก่อนค่าใช้จ่าย)' : '';
+    } else {
+      el.textContent = val > 0 ? 'หักลดหย่อนได้จริง ' + f2(val) + ' บาท' : '';
+    }
+  });
 
  const rows=[
    ['เงินได้ทั้งหมด',r.inc],
@@ -688,4 +784,287 @@ function up(){
 document.addEventListener('input',up);
 document.addEventListener('change',up);
 up();
+
+// ===================== OCR (Universal Integration) =====================
+let ocrTarget = null;
+let tesseractLoadPromise = null;
+
+function loadTesseract() {
+  if (window.Tesseract) return Promise.resolve();
+  if (tesseractLoadPromise) return tesseractLoadPromise;
+  tesseractLoadPromise = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error('โหลดไลบรารี OCR ไม่สำเร็จ โปรดตรวจสอบการเชื่อมต่ออินเทอร์เน็ต'));
+    document.head.appendChild(s);
+  });
+  return tesseractLoadPromise;
+}
+
+function preprocessToCanvas(imgEl, mode) {
+  if (!imgEl.naturalWidth || !imgEl.naturalHeight) {
+    throw new Error('ภาพยังโหลดไม่เสร็จ โปรดรอสักครู่แล้วลองใหม่');
+  }
+  const targetW = 1600;
+  const scale = imgEl.naturalWidth < targetW ? targetW / imgEl.naturalWidth : 1;
+  const w = Math.round(imgEl.naturalWidth * scale);
+  const h = Math.round(imgEl.naturalHeight * scale);
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  ctx.imageSmoothingEnabled = true;
+  if ('imageSmoothingQuality' in ctx) ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(imgEl, 0, 0, w, h);
+  const imgData = ctx.getImageData(0, 0, w, h);
+  const d = imgData.data;
+  const n = w * h;
+  const gray = new Uint8ClampedArray(n);
+  const hist = new Array(256).fill(0);
+  for (let i = 0, p = 0; i < d.length; i += 4, p++) {
+    const g = mode === 'min'
+      ? Math.min(d[i], d[i + 1], d[i + 2])
+      : (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) | 0;
+    gray[p] = g;
+    hist[g]++;
+  }
+  let threshold = -1;
+  if (mode === 'otsu') {
+    let sumAll = 0;
+    for (let t = 0; t < 256; t++) sumAll += t * hist[t];
+    let sumB = 0, wB = 0, maxVar = 0;
+    threshold = 140;
+    for (let t = 0; t < 256; t++) {
+      wB += hist[t];
+      if (wB === 0) continue;
+      const wF = n - wB;
+      if (wF === 0) break;
+      sumB += t * hist[t];
+      const mB = sumB / wB;
+      const mF = (sumAll - sumB) / wF;
+      const varBetween = wB * wF * (mB - mF) * (mB - mF);
+      if (varBetween > maxVar) { maxVar = varBetween; threshold = t; }
+    }
+  }
+  for (let p = 0, i = 0; p < n; p++, i += 4) {
+    const v = threshold >= 0 ? (gray[p] > threshold ? 255 : 0) : gray[p];
+    d[i] = d[i + 1] = d[i + 2] = v;
+  }
+  ctx.putImageData(imgData, 0, 0);
+  return c;
+}
+
+function parseAmounts(rawText) {
+  const thaiDigits = '๐๑๒๓๔๕๖๗๘๙';
+  let text = rawText.replace(/[๐-๙]/g, d => String(thaiDigits.indexOf(d)));
+  text = text
+    .replace(/\b\d{1,2}\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{2,4}\b/gi, ' ')
+    .replace(/\d{1,2}\s*(?:ม\.ค\.|ก\.พ\.|มี\.ค\.|เม\.ย\.|พ\.ค\.|มิ\.ย\.|ก\.ค\.|ส\.ค\.|ก\.ย\.|ต\.ค\.|พ\.ย\.|ธ\.ค\.)\s*\d{2,4}/g, ' ')
+    .replace(/\b\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AP]M)?\b/gi, ' ');
+  const lines = text.split(/\n/);
+
+  const moneyRe = /\d{1,3}(?:[,\s]\d{3})*\.\d{2}|\b\d+\.\d{2}\b/g;
+  const feeRe = /fee|ค่าธรรมเนียม|ค่าบริการ/i;
+  const strongRe = /Amount|Total|จำนวนเงิน|ยอดรวม|รวมเป็นเงิน|รวมทั้งสิ้น|จำนวนเงินรวม/i;
+  const labelRe = /Amount|Total|Baht|THB|฿|บาท|จำนวนเงิน|ยอดรวม|รวมเป็นเงิน|รวมทั้งสิ้น|จำนวนเงินรวม/i;
+  const pos = v => v != null && !isNaN(v) && v > 0;
+
+  function toNumber(raw) {
+    const clean = raw.replace(/[\s,]/g, '');
+    return parseFloat(clean);
+  }
+  const nums = l => (l.match(moneyRe) || []).map(toNumber).filter(pos);
+
+  let amountGuess = null, whtGuess = null, confidence = null;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/หัก.*(ที่จ่าย)|ภาษีหัก|50\s*ทวิ|WHT/i.test(line)) {
+      const m = nums(line);
+      if (m.length > 0) whtGuess = m[m.length - 1];
+    }
+  }
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (feeRe.test(line) || !labelRe.test(line)) continue;
+    const conf = strongRe.test(line) ? 'strong' : 'weak';
+    const m = nums(line);
+    if (m.length > 0) { amountGuess = m[m.length - 1]; confidence = conf; break; }
+    for (let offset = 1; offset <= 2; offset++) {
+      const nl = lines[i + offset];
+      if (nl == null || feeRe.test(nl)) continue;
+      const nm = nums(nl);
+      if (nm.length > 0) { amountGuess = nm[0]; confidence = conf; break; }
+    }
+    if (amountGuess != null) break;
+  }
+
+  if (amountGuess == null) {
+    const valid = [];
+    lines.forEach(l => { if (!feeRe.test(l)) nums(l).forEach(v => { if (v < 10000000) valid.push(v); }); });
+    if (valid.length > 0) { amountGuess = valid[0]; confidence = 'fallback'; }
+  }
+
+  return { amountGuess, whtGuess, confidence };
+}
+
+function resetOcrModalUI() {
+  $('ocrFile').value = '';
+  $('ocrPreviewWrap').hidden = true;
+  $('ocrRunBtn').hidden = true;
+  $('ocrStatus').textContent = '';
+  $('ocrResult').hidden = true;
+  $('ocrConfirmBtn').hidden = true;
+  $('ocrRawText').textContent = '';
+  $('ocrWhtHint').textContent = '';
+}
+
+window.openOcrModalField = function (fieldId) {
+  ocrTarget = { type: 'field', id: fieldId };
+  resetOcrModalUI();
+  $('ocrModal').hidden = false;
+};
+
+window.openOcrModalDyn = function (key, idx) {
+  ocrTarget = { type: 'dyn', id: key, idx: idx };
+  resetOcrModalUI();
+  $('ocrModal').hidden = false;
+};
+
+window.openOcrModalExpAct = function (key, idx) {
+  ocrTarget = { type: 'expAct', id: key, idx: idx };
+  resetOcrModalUI();
+  $('ocrModal').hidden = false;
+};
+
+window.openOcrModalDed = function (key, idx) {
+  ocrTarget = { type: 'ded', id: key, idx: idx };
+  resetOcrModalUI();
+  $('ocrModal').hidden = false;
+};
+
+window.openOcrModalDon = function (key, idx) {
+  ocrTarget = { type: 'don', id: key, idx: idx };
+  resetOcrModalUI();
+  $('ocrModal').hidden = false;
+};
+
+window.openOcrModalWh = function (key, idx) {
+  ocrTarget = { type: 'wh', id: key, idx: idx };
+  resetOcrModalUI();
+  $('ocrModal').hidden = false;
+};
+
+window.closeOcrModal = function () {
+  $('ocrModal').hidden = true;
+  ocrTarget = null;
+};
+
+$('ocrFile').addEventListener('change', e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const img = $('ocrPreview');
+  $('ocrPreviewWrap').hidden = true;
+  $('ocrRunBtn').hidden = true;
+  $('ocrResult').hidden = true;
+  $('ocrConfirmBtn').hidden = true;
+  $('ocrStatus').textContent = 'กำลังโหลดรูปภาพ...';
+  img.onload = () => {
+    $('ocrStatus').textContent = '';
+    $('ocrPreviewWrap').hidden = false;
+    $('ocrRunBtn').hidden = false;
+  };
+  img.onerror = () => {
+    $('ocrStatus').textContent = 'ไม่สามารถเปิดไฟล์รูปภาพได้ โปรดลองเลือกไฟล์ใหม่';
+  };
+  img.src = URL.createObjectURL(f);
+});
+
+$('ocrRunBtn').addEventListener('click', async () => {
+  $('ocrRunBtn').hidden = true;
+  $('ocrStatus').textContent = 'กำลังโหลดเครื่องมืออ่านเอกสาร... (ครั้งแรกอาจใช้เวลาสักครู่)';
+  try {
+    await loadTesseract();
+    $('ocrStatus').textContent = 'กำลังอ่านตัวเลขจากเอกสาร...';
+    const worker = await Tesseract.createWorker('tha+eng');
+    const modes = ['min', 'lum', 'otsu'], rank = { strong: 3, weak: 2, fallback: 1 };
+    let best = null;
+    for (let k = 0; k < modes.length; k++) {
+      $('ocrStatus').textContent = 'กำลังอ่านตัวเลขจากเอกสาร... (รอบที่ ' + (k + 1) + '/' + modes.length + ')';
+      const { data: { text: tx } } = await worker.recognize(preprocessToCanvas($('ocrPreview'), modes[k]));
+      const r = parseAmounts(tx);
+      const sc = r.amountGuess == null ? 0 : (rank[r.confidence] || 1);
+      if (!best || sc > best.sc) best = { sc, r, text: tx };
+      if (sc >= 2) break;
+    }
+    await worker.terminate();
+    const text = best.text;
+    const { amountGuess, whtGuess } = best.r;
+    $('ocrRawText').textContent = text.trim() || '(ไม่พบข้อความ)';
+    $('ocrAmount').value = amountGuess ?? '';
+    $('ocrWht').value = whtGuess ?? '';
+
+    $('ocrWhtHint').textContent = '';
+    $('ocrStatus').textContent = amountGuess == null
+      ? 'ไม่พบตัวเลขที่ชัดเจนในเอกสาร โปรดกรอกจำนวนเงินด้วยตนเอง'
+      : '';
+    $('ocrResult').hidden = false;
+    $('ocrConfirmBtn').hidden = false;
+  } catch (err) {
+    $('ocrStatus').textContent = 'เกิดข้อผิดพลาดในการอ่านเอกสาร: ' + err.message + ' — โปรดลองใหม่หรือกรอกด้วยตนเอง';
+    $('ocrRunBtn').hidden = false;
+  }
+});
+
+window.confirmOcr = function () {
+  if (!ocrTarget) return;
+  const amt = +$('ocrAmount').value || 0;
+  const wht = +$('ocrWht').value || 0;
+
+  if (ocrTarget.type === 'field') {
+    const el = $(ocrTarget.id);
+    if (el) el.value = amt;
+  } else if (ocrTarget.type === 'dyn') {
+    const { id, idx } = ocrTarget;
+    if (dynInc[id] && dynInc[id][idx]) {
+      dynInc[id][idx].amount = amt;
+      renderDynList(id);
+    }
+  } else if (ocrTarget.type === 'expAct') {
+    const { id, idx } = ocrTarget;
+    if (dynExpAct[id] && dynExpAct[id][idx]) {
+      dynExpAct[id][idx].amount = amt;
+      renderExpActList(id);
+    }
+  } else if (ocrTarget.type === 'ded') {
+    const { id, idx } = ocrTarget;
+    if (dynDed[id] && dynDed[id][idx]) {
+      dynDed[id][idx].amount = amt;
+      renderMultiList(dynDed, 'ded', 'openOcrModalDed', 'delMultiDedItem');
+    }
+  } else if (ocrTarget.type === 'don') {
+    const { id, idx } = ocrTarget;
+    if (dynDonation[id] && dynDonation[id][idx]) {
+      dynDonation[id][idx].amount = amt;
+      renderMultiList(dynDonation, 'don', 'openOcrModalDon', 'delMultiDonationItem');
+    }
+  } else if (ocrTarget.type === 'wh') {
+    const { id, idx } = ocrTarget;
+    if (dynWh[id] && dynWh[id][idx]) {
+      dynWh[id][idx].amount = amt;
+      renderMultiList(dynWh, 'wh', 'openOcrModalWh', 'delMultiWhItem');
+    }
+  }
+
+  if (wht > 0) {
+    if (dynWh['w2'] && dynWh['w2'][0]) {
+      dynWh['w2'][0].amount = (+dynWh['w2'][0].amount || 0) + wht;
+      renderMultiList(dynWh, 'wh', 'openOcrModalWh', 'delMultiWhItem');
+    }
+  }
+
+  closeOcrModal();
+  up();
+};
 </script></body></html>
