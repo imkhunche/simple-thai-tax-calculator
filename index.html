@@ -366,7 +366,7 @@ function calc(s){
  const tax = t2>5e3 ? mx(t1,t2) : t1;
  
  const wht=sumWhFlat('w1')+sumWhFlat('w2')+sumWhFlat('w3');
- const half=n('h')>0?n('h'):R(i.slice(4));
+ const half = s.h !== '' && s.h != null ? n('h') : R(i.slice(4));
  const form=inc===0?'':inc2===0?'ภ.ง.ด. 91':'ภ.ง.ด. 90'+(half>(mar?12e4:6e4)?' และ ภ.ง.ด. 94 (ม.ค.–มิ.ย.)':'');
  return{
    inc, ex, exempt, pvdE, pvdA, exDetails:{ex12, ex3, ex5, ex5_flat, ex6, ex6_flat, ex7, ex8, ex8_flat, ex8_hasOther},
